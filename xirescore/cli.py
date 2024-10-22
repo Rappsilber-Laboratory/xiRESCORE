@@ -58,10 +58,7 @@ def main():
     logger = logging.getLogger('xirescore')
 
     # Configure Loki logger
-    if args.loki is None:
-        logging.basicConfig()
-        logger.setLevel(logging.DEBUG)
-    else:
+    if args.loki is not None:
         handler = logging_loki.LokiHandler(
             url=args.loki,
             tags={
