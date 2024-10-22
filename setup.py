@@ -30,7 +30,7 @@ requirements = [
     "threadpoolctl>=3.5.0",
     "deepmerge~=1.1.0",
     "SQLAlchemy~=2.0.30",
-    "psycopg2>=2.9",
+    "psycopg2-binary>=2.9",
     "python-logging-loki",
     "fastparquet>=2022.11.0",
     "pyarrow~=17.0.0",
