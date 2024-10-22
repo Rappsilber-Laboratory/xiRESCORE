@@ -2,6 +2,7 @@
 import copy
 import logging
 import random
+import time
 from collections.abc import Collection
 from math import ceil
 
@@ -268,6 +269,13 @@ class XiRescore:
         # Keep rescored matches when no output is defined
         if type(self._output) is pd.DataFrame:
             self._output = df_rescored
+
+        logging.info("Waiting for writer to finish...")
+        while writers.write_lock.locked():
+            time.sleep(10)
+            logging.debug("Waiting for writer to finish...")
+
+        logging.debug("Writer finished")
 
     def rescore_df(self, df: pd.DataFrame) -> pd.DataFrame:
         """

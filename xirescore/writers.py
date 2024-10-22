@@ -4,6 +4,7 @@ Writers for data outputs
 from pathlib import Path
 import random
 import os
+from threading import Lock, Thread
 
 import fastparquet
 import pandas as pd
@@ -15,6 +16,7 @@ from xirescore.DBConnector import DBConnector
 
 _dbs = dict()
 
+write_lock = Lock()
 
 def _get_db(hostname,
            port,
@@ -45,6 +47,27 @@ def append_rescorings(output,
                       options=dict(),
                       logger=None,
                       random_seed=random.randint(0,2**32-1)):
+    global write_lock
+    write_lock.acquire()
+    t = Thread(
+        target=append_rescorings_job,
+        kwargs=dict(
+            output=output,
+            df=df,
+            options=options,
+            logger=logger,
+            random_seed=random_seed,
+        )
+    )
+    t.run()
+
+
+def append_rescorings_job(output,
+                          df: pd.DataFrame,
+                          options=dict(),
+                          logger=None,
+                          random_seed=random.randint(0,2**32-1)):
+    global write_lock
     output_type = get_source_type(output)
     if output_type == 'csv':
         append_csv(output, df)
@@ -60,6 +83,7 @@ def append_rescorings(output,
             logger=logger,
             random_seed=random_seed,
         )
+    write_lock.release()
 
 
 def append_parquet(output, df: pd.DataFrame, compression='GZIP'):
