@@ -3,15 +3,11 @@ import subprocess
 import sys
 import tkinter as tk
 from tkinter import filedialog
-from tkinter import scrolledtext, DISABLED
+from tkinter import scrolledtext
 import logging
-import time
 import threading
-import yaml
-import multiprocess as mp
 from importlib.resources import files
 
-from xirescore.XiRescore import XiRescore
 import xirescore
 
 threads = []
@@ -19,6 +15,7 @@ processes = []
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
+
 
 class GuiLoggingHandler(logging.Handler):
     """
