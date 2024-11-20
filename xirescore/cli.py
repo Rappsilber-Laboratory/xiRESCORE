@@ -3,12 +3,12 @@ import yaml
 import ast
 import logging
 import os
-import sys
 
 import logging_loki
 
 from xirescore.XiRescore import XiRescore
 import xirescore
+from xirescore._gui import create_gui
 
 
 def main():
@@ -28,6 +28,7 @@ def main():
                         type=str, required=False)
     parser.add_argument('--loki-job-id', action='store', dest='loki_job_id', help='Loki job ID',
                         default="", type=str, required=False)
+    parser.add_argument('--debug', action='store_true', dest='debug', help='Debug logging')
     parser.add_argument('--version', action='store_true', dest='print_version', help='print version')
 
     # Parse arguments
@@ -37,30 +38,11 @@ def main():
         print(xirescore.__version__)
         os._exit(os.EX_OK)
 
-    if args.input_path is None:
-        print('xirescore: error: the following arguments are required: -i', file=sys.stderr)
-        parser.print_help()
-        os._exit(os.EX_USAGE)
-    if args.output_path is None:
-        print('xirescore: error: the following arguments are required: -o', file=sys.stderr)
-        parser.print_help()
-        os._exit(os.EX_USAGE)
-
-    # Load config
-    if args.config_file is not None:
-        with open(args.config_file, 'r') as file:
-            options = yaml.safe_load(file)
-    elif args.config_string is not None:
-        options = ast.literal_eval(args.config_string)
-    else:
-        options = dict()
-
     logger = logging.getLogger('xirescore')
 
     # Configure Loki logger
     if args.loki is None:
         logging.basicConfig()
-        logger.setLevel(logging.DEBUG)
     else:
         handler = logging_loki.LokiHandler(
             url=args.loki,
@@ -70,8 +52,29 @@ def main():
             },
             version="1",
         )
-        logger.setLevel(logging.DEBUG)
         logger.addHandler(handler)
+
+    # Set logging level
+    if args.debug:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
+
+    if (args.input_path is None) or (args.output_path is None):
+        create_gui(logger)
+    else:
+        run_headless(args, logger)
+
+
+def run_headless(args, logger):
+    # Load config
+    if args.config_file is not None:
+        with open(args.config_file, 'r') as file:
+            options = yaml.safe_load(file)
+    elif args.config_string is not None:
+        options = ast.literal_eval(args.config_string)
+    else:
+        options = dict()
 
     # Configure stdout logger
     ch = logging.StreamHandler()
