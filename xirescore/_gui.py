@@ -8,11 +8,12 @@ from tkinter import scrolledtext
 import logging
 import threading
 from importlib.resources import files
+from typing import Union
 
 import xirescore
 
 threads = []
-xi_proc = None
+xi_proc: Union[subprocess.Popen, None] = None
 
 class GuiLoggingHandler(logging.Handler):
     """
@@ -118,6 +119,7 @@ def check_finished(root):
                 )
             xi_proc = None
     root.after(1000, lambda: check_finished(root))
+
 
 # Create the GUI
 def create_gui():
