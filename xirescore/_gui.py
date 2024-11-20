@@ -12,11 +12,7 @@ from importlib.resources import files
 import xirescore
 
 threads = []
-processes = []
-
-# Configure logging
-logging.basicConfig(level=logging.INFO, format="%(message)s")
-
+xi_proc = None
 
 class GuiLoggingHandler(logging.Handler):
     """
@@ -48,14 +44,14 @@ def log_subprocess_output(pipe, logger, level=logging.INFO):
 
 
 def run_xirescore(input_path, config_path, output_path, logger):
+    global xi_proc
     # Run xiRescore
     opt_config = []
     if config_path.get() != '':
         opt_config = ['-c', config_path.get()]
-    python_version = f'{sys.version_info.major}.{sys.version_info.minor}'
-    process = subprocess.Popen(
+    xi_proc = subprocess.Popen(
         [
-            f"python{python_version}",
+            sys.executable,
             "-m", "xirescore",
             "-i", f"{input_path.get()}",
             "-o", f"{output_path.get()}",
@@ -66,15 +62,14 @@ def run_xirescore(input_path, config_path, output_path, logger):
         universal_newlines=True
     )
 
-    stdout_thread = threading.Thread(target=log_subprocess_output, args=(process.stdout, logger))
-    stderr_thread = threading.Thread(target=log_subprocess_output, args=(process.stderr, logger))
+    stdout_thread = threading.Thread(target=log_subprocess_output, args=(xi_proc.stdout, logger))
+    stderr_thread = threading.Thread(target=log_subprocess_output, args=(xi_proc.stderr, logger))
 
     stdout_thread.start()
     stderr_thread.start()
 
     threads.append(stdout_thread)
     threads.append(stderr_thread)
-    processes.append(process)
 
 
 def _open_file_selector(filepath_var):
@@ -99,8 +94,34 @@ def _save_file_selector(filepath_var):
     filepath_var.set(filepath)
 
 
+def info_box(root, title, text):
+    popup = tk.Toplevel(root)
+    popup.title(title)
+    label = tk.Label(popup, text=text)
+    label.pack(pady=10)
+    close_button = tk.Button(popup, text="Close", command=popup.destroy)
+    close_button.pack(pady=5)
+
+
+def check_finished(root):
+    global xi_proc
+    if xi_proc is not None:
+        exit_code = xi_proc.poll()
+        if exit_code is not None:
+            if exit_code == 0:
+                info_box(root, "Info", "Rescoring finished")
+            else:
+                info_box(
+                    root,
+                    "ERROR",
+                    f"Rescoring failed with exit code {exit_code}!"
+                )
+            xi_proc = None
+    root.after(1000, lambda: check_finished(root))
+
 # Create the GUI
 def create_gui():
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     logger = logging.getLogger()
     root = tk.Tk()
     icon = tk.PhotoImage(file=files("xirescore.assets").joinpath("xirescore_logo.png"))
@@ -169,14 +190,10 @@ def create_gui():
     textbox_handler.setFormatter(formatter)
     logger.addHandler(textbox_handler)
 
-    root.protocol("WM_DELETE_WINDOW", lambda: on_close(root))
+    root.protocol("WM_DELETE_WINDOW", on_close)
+    root.after(1000, lambda: check_finished(root))
     root.mainloop()
 
 
-def on_close(root):
-    for p in processes:
-        p.kill()
-    for t in threads:
-        print('Join logging threads')
-        t.join()
-    root.quit()
+def on_close():
+    os._exit(os.EX_OK)
