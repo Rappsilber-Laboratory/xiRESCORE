@@ -38,6 +38,13 @@ def main():
         print(xirescore.__version__)
         os._exit(os.EX_OK)
 
+    if (args.input_path is None) or (args.output_path is None):
+        create_gui()
+    else:
+        run_headless(args)
+
+
+def run_headless(args):
     logger = logging.getLogger('xirescore')
 
     # Configure Loki logger
@@ -60,13 +67,6 @@ def main():
     else:
         logger.setLevel(logging.INFO)
 
-    if (args.input_path is None) or (args.output_path is None):
-        create_gui(logger)
-    else:
-        run_headless(args, logger)
-
-
-def run_headless(args, logger):
     # Load config
     if args.config_file is not None:
         with open(args.config_file, 'r') as file:
