@@ -151,10 +151,10 @@ def _try_parameters(features_df: pl.DataFrame,
         # Train fold classifier
         clf = model(**params)
         clf.fit(
-            fold_train_features_df.to_numpy(),
-            fold_train_labels_df.to_numpy()
+            fold_train_features_df,
+            fold_train_labels_df
         )
-        test_predictions = clf.predict(fold_test_features_df.to_numpy())
+        test_predictions = clf.predict(fold_test_features_df)
 
         # Evaluate fold model
         score = metric(

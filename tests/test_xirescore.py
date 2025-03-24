@@ -319,11 +319,20 @@ def test_full_cli_parquet_rescoring():
         assert os.path.exists(f'{tmpdirname}/result.parquet'), f"Output file was not created."
 
 def test_eclp():
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    )
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
     df_standard = pl.read_parquet('eclp-bs3.parquet')
     with open('config_kojak.yaml', 'r') as file:
         options = yaml.safe_load(file)
     rescorer = XiRescore(
         input_path=df_standard.to_pandas(),
         options=options,
+        logger=logger,
     )
     rescorer.run()
+    df_rescored = rescorer.get_rescored_output().to_pandas()
+    pass
