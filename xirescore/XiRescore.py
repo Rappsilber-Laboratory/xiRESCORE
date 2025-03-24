@@ -160,7 +160,7 @@ class XiRescore:
         # Scale features
         train_df_transformed = self.train_df.clone()
         train_df_transformed[self.train_features] = self.scaler.transform(
-            self.train_df[self.train_features]
+            train_df_transformed[self.train_features]
         )
 
         self._logger.info("Perform hyperparameter optimization")
