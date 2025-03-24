@@ -1,10 +1,12 @@
+import logging
 from logging import Logger
 
-import numpy as np
-import pandas as pd
+import polars as pl
 
 
-def get_features(df: pd.DataFrame, options: dict, logger: Logger):
+logger = logging.getLogger(__name__)
+
+def get_features(df: pl.DataFrame, options: dict):
     features_const = options['input']['columns']['features']
     feat_prefix = options['input']['columns']['feature_prefix']
     features_prefixes = [
@@ -20,7 +22,7 @@ def get_features(df: pd.DataFrame, options: dict, logger: Logger):
     nan_features = [
         f
         for f in features
-        if (f not in absent_features) and any(pd.isna(df[f].values))
+        if (f not in absent_features) and any(df[f].is_null())
     ]
     features = [
         f

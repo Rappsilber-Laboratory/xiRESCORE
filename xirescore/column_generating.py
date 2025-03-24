@@ -1,63 +1,65 @@
-import pandas as pd
+import polars as pl
 
 from xirescore.bi_fdr import self_or_between_mp, calculate_bi_fdr
 
 
-def generate(df, options: dict, do_self_between=False, do_fdr=False) -> pd.DataFrame:
+def generate(df: pl.DataFrame, options: dict, do_self_between=False, do_fdr=False) -> pl.DataFrame:
     input_cols = options['input']['columns']
     cols_spectra = input_cols['spectrum_id']
     col_score = input_cols['score']
     # Generate top_ranking
     if input_cols['top_ranking'] not in df.columns:
-        df_max = df.groupby(cols_spectra).agg(max=(f'{col_score}', 'max')).rename(
-            {'max': f'{col_score}_max'}, axis=1)
-        df = df.merge(
-            df_max,
-            left_on=list(cols_spectra),
-            right_index=True
+        df_max = df.group_by(cols_spectra).agg(
+            pl.col(col_score).max().alias(f'{col_score}_max')
         )
-        df['top_ranking'] = df[f'{col_score}'] == df[f'{col_score}_max']
+        df = df.join(
+            df_max,
+            on=list(cols_spectra)
+        )
+        df = df.with_columns(
+            top_ranking=pl.col(col_score) == pl.col(f'{col_score}_max')
+        )
     # Generate decoy_class column from decoy_p1 and decoy_p2
     if input_cols['decoy_class'] not in df.columns:
-        df[input_cols['decoy_class']] = ''
-        df.loc[
-            df[input_cols['decoy_p1']] & df[input_cols['decoy_p2']],
-            input_cols['decoy_class']
-        ] = 'DD'
-        df.loc[
-            (~df[input_cols['decoy_p1']]) & (~df[input_cols['decoy_p2']]),
-            input_cols['decoy_class']
-        ] = 'TT'
-        df.loc[
-            (df[input_cols['decoy_class']] != 'TT') & (df[input_cols['decoy_class']] != 'DD'),
-            input_cols['decoy_class']
-        ] = 'TD'
+        tt_expr = pl.col(input_cols['decoy_p1']).not_() & pl.col(input_cols['decoy_p2']).not_()
+        dd_expr = pl.col(input_cols['decoy_p1']) & pl.col(input_cols['decoy_p2'])
+        df = df.with_columns(
+            decoy_class=pl.when(tt_expr).then(pl.lit('TT'))\
+                          .when(dd_expr).then(pl.lit('DD'))\
+                          .otherwise(pl.lit('TD'))
+        )
     # Generate target column from decoy_class
     if input_cols['target'] not in df.columns:
-        df[input_cols['target']] = False
-        df.loc[
-            df[input_cols['decoy_class']] == 'TT',
-            input_cols['target']
-        ] = True
+        df.with_columns(
+            (pl.col(input_cols['decoy_class']) == 'TT').alias(input_cols['target'])
+        )
     # Calculte self_between from protein_p1, and protein_p2
     if do_self_between and input_cols['self_between'] not in df.columns:
-        df[input_cols['self_between']] = self_or_between_mp(
-            df,
-            col_prot1=input_cols['protein_p1'],
-            col_prot2=input_cols['protein_p2'],
-            decoy_adj=options['input']['constants']['decoy_adjunct'],
+        protein_p1_list = pl.col(input_cols['protein_p1'])
+        protein_p2_list = pl.col(input_cols['protein_p2'])
+        if df[input_cols['protein_p1']].dtype is not pl.String:
+            protein_p1_list = protein_p1_list
+        if df[input_cols['protein_p2']].dtype is not pl.String:
+            protein_p2_list = protein_p2_list.str.split(';')
+        protein_p1_list = protein_p1_list.list.eval(
+            pl.element().str.replace_all(options['input']['constants']['decoy_adjunct'], '')
+        )
+        protein_p2_list = protein_p2_list.list.eval(
+            pl.element().str.replace_all(options['input']['constants']['decoy_adjunct'], '')
+        )
+        overlap_expr = protein_p1_list.list.set_intersection(protein_p2_list)
+        df = df.with_columns(
+            pl.when(overlap_expr == 0).then(pl.lit('between')).otherwise(pl.lit('self'))
         )
     # Calculate fdr from self_between and score
     if do_fdr and input_cols['fdr'] not in df.columns:
-        df.loc[
-            df[input_cols['top_ranking']].astype(bool),
-            input_cols['fdr']
-        ] = calculate_bi_fdr(
-            df[
-                df[input_cols['top_ranking']].astype(bool)
-            ],
+        fdr_pd = calculate_bi_fdr(
+            df.filter(input_cols['top_ranking']).to_pandas(),
             score_col=input_cols['score'],
             decoy_class=input_cols['decoy_class'],
             fdr_group_col=input_cols['self_between'],
+        )
+        df = df.with_columns(
+            fdr=pl.Series(fdr_pd)
         )
     return df

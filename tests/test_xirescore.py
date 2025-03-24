@@ -4,6 +4,7 @@
 import random
 import sys
 import pandas as pd
+import polars as pl
 import pytest
 import logging
 import tempfile
@@ -11,35 +12,6 @@ import subprocess
 import os
 import numpy as np
 from xirescore.XiRescore import XiRescore
-
-
-@pytest.mark.db
-@pytest.mark.slow
-def test_full_db_rescoring():
-    logger = logging.getLogger(__name__)
-    logging.basicConfig()
-    logger.setLevel(logging.DEBUG)
-    logger.info('Start full DB rescoring test')
-    options = {
-        'input': {
-            'columns': {
-                'csm_id': [
-                    'match_id',
-                    'search_id'
-                ]
-            }
-        },
-        'rescoring': {
-            'spectra_batch_size': 10_000
-        }
-    }
-    rescorer = XiRescore(
-        input_path='xi2resultsets://test:test@localhost:5432/xisearch2/fdbe9e59-2baa-44cb-b8cb-e8b7a590e136',
-        output_path='xi2resultsets://test:test@localhost:5432/xisearch2',
-        options=options,
-        logger=logger,
-    )
-    rescorer.run()
 
 
 @pytest.mark.parquet
@@ -242,7 +214,7 @@ def test_full_csv_rescoring():
 
 @pytest.mark.df
 def test_full_df_rescoring():
-    df = pd.read_parquet('./tests/fixtures/test_data.parquet')
+    df = pl.read_parquet('./tests/fixtures/test_data.parquet')
     logging.basicConfig(
         level=logging.DEBUG,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -293,8 +265,8 @@ def test_full_df_rescoring():
     )
     rescorer.run()
     df_out2 = rescorer.get_rescored_output()
-    hash1 = pd.util.hash_pandas_object(df_out)
-    hash2 = pd.util.hash_pandas_object(df_out2)
+    hash1 = df_out.hash_rows(seed=0).to_list()
+    hash2 = df_out2.hash_rows(seed=0).to_list()
     assert all(np.equal(hash1, hash2))
 
 

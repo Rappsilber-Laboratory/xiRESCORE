@@ -3,7 +3,7 @@ from math import ceil
 import logging
 
 import numpy as np
-import pandas as pd
+import polars as pl
 import scipy
 
 from xirescore import async_result_resolving
@@ -15,6 +15,8 @@ def rescore(models,
             apply_logit=False,
             max_cpu=-1,
             logger=logging.getLogger(__name__)):
+    if not isinstance(df, pl.DataFrame):
+        df: pl.DataFrame = pl.DataFrame(df)
     n_procs = max_cpu
     if n_procs < 1:
         n_procs = int(mp.cpu_count() - 1)
@@ -25,14 +27,14 @@ def rescore(models,
 
     # Slice input data for multiprocessing
     dataslices = [
-        df.iloc[
+        df[
             i*slice_size:(i+1)*slice_size
         ]
         for i in range(n_dataslices)
     ]
 
     # Apply each classifier to each data slice
-    with mp.Pool(n_procs) as pool:
+    with mp.get_context("spawn").Pool(n_procs) as pool:
         async_results = []
         for slice in dataslices:
             for clf in models:
@@ -76,7 +78,7 @@ def rescore(models,
             slice_results[i] = scipy.special.logit(sr)
 
     # Init result DF
-    df_rescore = pd.DataFrame(index=df.index)
+    np_rescore = np.zeros((len(df), 0))
 
     # Fill result DF
     for i_m, model in enumerate(models):
@@ -84,10 +86,20 @@ def rescore(models,
             slice_results[i_s][i_m]
             for i_s in range(n_dataslices)
         ]
-        df_rescore[f'{rescore_col}_{i_m}'] = np.concatenate(rescores_m)
+        np_rescore = np.hstack([
+            np_rescore,
+            np.concatenate(rescores_m).reshape(len(df), 1)
+        ])
+
+    df_rescore = pl.DataFrame(
+        np_rescore,
+        schema=[(f'{rescore_col}_{i_m}', pl.Float64) for i_m, _ in enumerate(models)],
+    )
 
     # Calculate mean score and standard deviation
-    df_rescore[rescore_col] = df_rescore.apply(np.mean, axis=1)
-    df_rescore[f'{rescore_col}_std'] = df_rescore.apply(np.std, axis=1)
+    df_rescore = df_rescore.with_columns(
+        df_rescore.mean_horizontal().alias(rescore_col),
+        df_rescore.transpose().std().transpose().to_series().alias(f'{rescore_col}_std'),
+    )
 
     return df_rescore

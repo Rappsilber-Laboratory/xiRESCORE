@@ -1,7 +1,7 @@
 import logging
+import polars as pl
 
-
-def validate(df, options, logger: logging.Logger):
+def validate(df: pl.DataFrame, options, logger: logging.Logger):
     # Validate that all feature columns are present
     for fcol in options['input']['columns']['features']:
         if fcol not in df.columns:

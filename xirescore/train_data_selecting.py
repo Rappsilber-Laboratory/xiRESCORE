@@ -1,6 +1,6 @@
 import logging
 
-import pandas as pd
+import polars as pl
 import numpy as np
 
 from xirescore import readers
@@ -8,7 +8,9 @@ from xirescore.column_generating import generate as generate_columns
 from xirescore.feature_scaling import get_scaler
 
 
-def select(input_data, options, logger):
+logger = logging.getLogger(__name__)
+
+def select(input_data, options):
     """
     Select training data for Crosslink MS Machine Learning based on specified options.
 
@@ -20,16 +22,6 @@ def select(input_data, options, logger):
     Returns:
     - A pandas DataFrame containing the selected training data.
     """
-
-    if logger is None:
-        # Set up default logging configuration if no logger is provided
-        logging.basicConfig(
-            level=logging.DEBUG,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        )
-        logger = logging.getLogger(__name__)
-    else:
-        logger = logger.getChild(__name__)
 
     # Extract options
     selection_mode = options['rescoring']['train_selection_mode']
@@ -48,7 +40,6 @@ def select(input_data, options, logger):
     # Read input data
     df = readers.read_sample(
         input_data,
-        logger=logger,
         sample=top_sample_size,
         top_ranking_col=top_ranking_col,
         sequence_p2_col=sequence_p2_col,
@@ -61,90 +52,90 @@ def select(input_data, options, logger):
     df = generate_columns(df, options=options, do_fdr=True, do_self_between=True)
 
     # Get scaler
-    scaler = get_scaler(df, options, logger)
+    scaler = get_scaler(df, options)
 
     # Selection mode: self-targets-all-decoys
     logger.info(f'Use selection mode {selection_mode}')
     if selection_mode == 'self-targets-all-decoys':
         # Create filters
-        filter_self = df[col_self_between] == val_self
-        filter_fdr = df[col_fdr] <= fdr_cutoff
-        filter_target = df[col_target]
+        filter_self = pl.col(col_self_between) == val_self
+        filter_fdr = pl.col(col_fdr) <= fdr_cutoff
+        filter_target = pl.col(col_target)
 
         # Max target size
         target_max = int(train_size_max / 2)
 
         # Get self targets
-        train_self_targets = df[filter_fdr & filter_target & filter_self]
+        train_self_targets = df.filter(filter_fdr & filter_target & filter_self)
         if len(train_self_targets) > target_max:
-            train_self_targets = train_self_targets.sample(target_max, random_state=seed)
+            train_self_targets = train_self_targets.sample(target_max, seed=seed)
         logger.info(f'Taking {len(train_self_targets)} self targets below {fdr_cutoff} FDR')
 
         # Get between targets
-        train_between_targets = df[filter_fdr & filter_target & ~filter_self]
+        train_between_targets = df.filter(filter_fdr & filter_target & ~filter_self)
         sample_min = min(
             len(train_between_targets),
             int(train_size_max/2)-len(train_self_targets),
         )
-        train_between_targets = train_between_targets.sample(sample_min, random_state=seed)
+        train_between_targets = train_between_targets.sample(sample_min, seed=seed)
         logger.info(f'Taking {len(train_between_targets)} between targets below {fdr_cutoff} FDR')
 
         # Get self decoy-x
-        train_self_decoys = df[filter_self & ~filter_target]
+        train_self_decoys = df.filter(filter_self & ~filter_target)
         sample_min = min(
             len(train_self_decoys),
             int(train_size_max/4)
         )
-        train_self_decoys = train_self_decoys.sample(sample_min, random_state=seed)
+        train_self_decoys = train_self_decoys.sample(sample_min, seed=seed)
         logger.info(f'Taking {len(train_self_decoys)} self decoys.')
 
         # Get between decoy-x
-        train_between_decoys = df[(~filter_self) & (~filter_target)]
+        train_between_decoys = df.filter((~filter_self) & (~filter_target))
         sample_min = min(
             len(train_between_decoys),
             int(train_size_max/2)-len(train_self_decoys),
         )
-        train_between_decoys = train_between_decoys.sample(sample_min, random_state=seed)
+        train_between_decoys = train_between_decoys.sample(sample_min, seed=seed)
         logger.info(f'Taking {len(train_between_decoys)} between decoys.')
 
-        train_data_df = pd.concat([
+        train_data_df = pl.concat([
             train_self_targets,
             train_between_targets,
             train_self_decoys,
             train_between_decoys
-        ]).copy()
+        ])
 
     # Selection mode: self-targets-capped-decoys
     elif selection_mode == 'self-targets-capped-decoys':
         # Create filters
-        filter_self = df[col_self_between] == val_self
-        filter_fdr = df[col_fdr] <= fdr_cutoff
-        filter_target = df[col_target].astype(bool)
+        filter_self = pl.col(col_self_between) == val_self
+        filter_fdr = pl.col(col_fdr) <= fdr_cutoff
+        filter_target = pl.col(col_target)
 
         # Max target size
         target_max = int(train_size_max / 2)
 
         # Get self targets
-        train_self_targets = df[filter_fdr & filter_target & filter_self]
+        train_self_targets = df.filter(filter_fdr & filter_target & filter_self)
         if len(train_self_targets) > target_max:
-            train_self_targets = train_self_targets.sample(target_max, random_state=seed)
+            train_self_targets = train_self_targets.sample(target_max, seed=seed)
         logger.info(f'Taking {len(train_self_targets)} self targets below {fdr_cutoff} FDR')
 
         # Get between targets
-        train_between_targets = df[filter_fdr & filter_target & ~filter_self]
+        train_between_targets = df.filter(filter_fdr & filter_target & ~filter_self)
         sample_min = min(
             len(train_between_targets),
             int(train_size_max/2)-len(train_self_targets),
         )
-        train_between_targets = train_between_targets.sample(sample_min, random_state=seed)
+        train_between_targets = train_between_targets.sample(sample_min, seed=seed)
         logger.info(f'Taking {len(train_between_targets)} between targets below {fdr_cutoff} FDR')
 
         # Get capped decoy-x
-        all_target = df[filter_target]
-        all_decoy = df[~filter_target]
-        _, hist_bins = np.histogram(df[col_native_score], bins=1_000)
-        hist_tt, _ = np.histogram(all_target[col_native_score], bins=hist_bins)
-        hist_dx, _ = np.histogram(all_decoy[col_native_score], bins=hist_bins)
+        all_target = df.filter(filter_target)
+        all_decoy = df.filter(~filter_target)
+        _, hist_bins = np.histogram(df[col_native_score].to_numpy(), bins=1_000)
+        hist_tt, _ = np.histogram(all_target[col_native_score].to_numpy(), bins=hist_bins)
+        hist_dx, _ = np.histogram(all_decoy[col_native_score].to_numpy(), bins=hist_bins)
         hist_dx_capped = np.minimum(hist_dx, hist_tt)
 
         # Number of Dx to aim for
@@ -160,29 +151,29 @@ def select(input_data, options, logger):
         )
         hist_dx_scaled = (hist_dx_capped * dx_scale_fact).round().astype(int)
 
-        train_decoys = pd.DataFrame()
+        train_decoys = pl.DataFrame(schema=input_data.schema)
         for i, n in enumerate(hist_dx_scaled):
             if n == 0:
                 continue
             score_min = hist_bins[i]
             score_max = hist_bins[i + 1]
-            bins_samples = all_decoy[
-                (all_decoy[col_native_score] >= score_min) & (all_decoy[col_native_score] < score_max)
-            ]
-            train_decoys = pd.concat(
+            bins_samples = all_decoy.filter(
+                (pl.col(col_native_score) >= score_min) & (pl.col(col_native_score) < score_max)
+            )
+            train_decoys = pl.concat(
                 [
                     train_decoys,
-                    bins_samples.sample(n=n, random_state=seed)
+                    bins_samples.sample(n=n, seed=seed)
                 ]
             )
 
         logger.info(f'Taking {len(train_decoys)} decoys.')
 
-        train_data_df = pd.concat([
+        train_data_df = pl.concat([
             train_self_targets,
             train_between_targets,
             train_decoys]
-        ).copy()
+        )
     else:
         raise TrainDataError(f"Unknown train data selection mode: {selection_mode}.")
 

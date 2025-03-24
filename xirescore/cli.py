@@ -87,7 +87,6 @@ def main():
         input_path=args.input_path,
         output_path=args.output_path,
         options=options,
-        logger=logger,
     )
     rescorer.run()
     logger.info("Done.")

@@ -2,6 +2,7 @@ from typing import Callable
 import importlib
 import logging
 
+import polars as pl
 from sklearn.base import ClassifierMixin
 import sklearn
 from sklearn.metrics import accuracy_score, balanced_accuracy_score
@@ -11,7 +12,7 @@ from xirescore import async_result_resolving
 from xirescore.NoOverlapKFold import NoOverlapKFold
 
 
-def train(train_df, cols_features, clf_params, options, splits=None,
+def train(train_df: pl.DataFrame, cols_features, clf_params, options, splits=None,
           logger: logging.Logger = None, loglevel=logging.DEBUG):
     # Create new logger or create child logger from existing one
     if logger is None:
@@ -30,9 +31,9 @@ def train(train_df, cols_features, clf_params, options, splits=None,
     col_label = options['input']['columns']['target']
 
     # Get DataFrames for peptide sequences, features and labels
-    pepseq_df = train_df[cols_pepseq]
-    features_df = train_df[cols_features]
-    labels_df = train_df[col_label].astype(bool)
+    pepseq_df = train_df.select(cols_pepseq)
+    features_df = train_df.select(cols_features)
+    labels_df = train_df[col_label]
 
     # Import model
     model_class = options['rescoring']['model_class']
@@ -56,11 +57,10 @@ def train(train_df, cols_features, clf_params, options, splits=None,
             target_col=col_label,
             random_state=seed,
             shuffle=True,
-            logger=logger
         )
         splits = kf.splits_by_peptides(
-            df=train_df,
-            pepseqs=pepseq_df
+            df=train_df.to_pandas(),
+            pepseqs=pepseq_df.to_pandas()
         )
 
     max_jobs = options['rescoring']['max_jobs']
@@ -68,7 +68,7 @@ def train(train_df, cols_features, clf_params, options, splits=None,
         max_jobs = mp.cpu_count() - 1
 
     fold_clfs = []
-    with mp.Pool(processes=max_jobs) as pool:
+    with mp.get_context("spawn").Pool(processes=max_jobs) as pool:
         for cvi, fold in enumerate(splits):
             # Only run multiprocessing for single core models
             if is_mp_model:
@@ -79,7 +79,7 @@ def train(train_df, cols_features, clf_params, options, splits=None,
                         fold=fold,
                         params=clf_params,
                         options=options,
-                        logger=logger.getChild(f"fold{cvi}")
+                        logger=logger
                     )
                 ]
             else:
@@ -91,17 +91,17 @@ def train(train_df, cols_features, clf_params, options, splits=None,
                         fold=fold,
                         params=clf_params,
                         options=options,
-                        logger=logger.getChild(f"fold{cvi}")
+                        logger=logger
                     )
                 )
             # Add job to the
             fold_clfs.append(fold_clf)
         # Resolve (potentially) async results
-        clfs = async_result_resolving.resolve(fold_clfs, logger=logger)
+        clfs = async_result_resolving.resolve(fold_clfs)
     return clfs, splits
 
 
-def train_fold(features_df, labels_df, fold, params, options, logger: logging.Logger):
+def train_fold(features_df, labels_df, fold, params, options, logger):
     # Import classifier model
     model_class = options['rescoring']['model_class']
     model_name = options['rescoring']['model_name']
@@ -116,22 +116,35 @@ def train_fold(features_df, labels_df, fold, params, options, logger: logging.Lo
     train_idx, test_idx = fold
 
     # Get fold's train features and labels
-    fold_train_features_df = features_df.loc[train_idx]
-    fold_train_labels_df = labels_df.loc[train_idx]
+    fold_train_features_df = features_df[train_idx.to_numpy()]
+    fold_train_labels_df = labels_df[train_idx.to_numpy()]
 
     # Get fold's test features and labels
-    fold_test_features_df = features_df.loc[test_idx]
-    fold_test_labels_df = labels_df.loc[test_idx]
+    fold_test_features_df = features_df[test_idx.to_numpy()]
+    fold_test_labels_df = labels_df[test_idx.to_numpy()]
 
     # Train fold classifier
     clf = model(**params)
-    clf.fit(fold_train_features_df, fold_train_labels_df)
-    test_predictions = clf.predict(fold_test_features_df)
+    clf.fit(
+        fold_train_features_df.to_numpy(),
+        fold_train_labels_df.to_numpy()
+    )
+    test_predictions = clf.predict(fold_test_features_df.to_numpy())
 
     # Evaluate fold model
-    score = metric(fold_test_labels_df, test_predictions, labels=[0, 1])
-    accuracy = accuracy_score(fold_test_labels_df, test_predictions, )
-    balanced_accuracy = balanced_accuracy_score(fold_test_labels_df, test_predictions, )
+    score = metric(
+        fold_test_labels_df.to_numpy(),
+        test_predictions,
+        labels=[0, 1]
+    )
+    accuracy = accuracy_score(
+        fold_test_labels_df.to_numpy(),
+        test_predictions,
+    )
+    balanced_accuracy = balanced_accuracy_score(
+        fold_test_labels_df.to_numpy(),
+        test_predictions,
+    )
     logger.info(f"Score: {score}")
     logger.info(f"Accuracy: {accuracy*100:.2f}%")
     logger.info(f"Balanced accuracy: {balanced_accuracy*100:.2f}%")

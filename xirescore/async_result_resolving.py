@@ -3,11 +3,14 @@ import functools
 from collections.abc import Iterable
 import multiprocess as mp
 import time
+import logging
 
 from tqdm import tqdm
 
 
-def resolve(async_results, show_pbar=True, pbar_args=dict(), logger=None):
+logger = logging.getLogger(__name__)
+
+def resolve(async_results, show_pbar=True, pbar_args=dict()):
     """
     Resolve asynchronous results from multiprocessing with progress bar.
     For compatibility this function returns anything that is not an asynchronous
@@ -19,10 +22,7 @@ def resolve(async_results, show_pbar=True, pbar_args=dict(), logger=None):
     :returns: Resolved result(s) or unprocessed ``async_results`` if it's a literal.
     :rtype: Any
     """
-    if logger is None:
-        logger = logging.getLogger(__name__)
-    else:
-        logger = logger.getChild(__name__)
+    global logger
 
     logger.debug("Resolving results")
     if not isinstance(async_results, Iterable):

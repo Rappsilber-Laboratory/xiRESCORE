@@ -5,6 +5,7 @@ import importlib
 import multiprocess as mp
 
 import numpy as np
+import polars as pl
 import sklearn
 from sklearn.base import ClassifierMixin
 from sklearn.metrics import accuracy_score, balanced_accuracy_score
@@ -13,16 +14,9 @@ from sklearn.model_selection import ParameterGrid
 from xirescore import async_result_resolving
 from xirescore.NoOverlapKFold import NoOverlapKFold
 
+logger = logging.getLogger(__name__)
 
-def get_hyperparameters(train_df, cols_features, splits, options,
-                        logger: logging.Logger = None, loglevel=logging.DEBUG):
-    # Create new logger or create child logger from existing one
-    if logger is None:
-        logger = logging.getLogger(__name__)
-        logger.setLevel(loglevel)
-    else:
-        logger = logger.getChild(__name__)
-
+def get_hyperparameters(train_df: pl.DataFrame, cols_features, splits, options):
     # Get peptide sequence columns
     cols_pepseq = [
         options['input']['columns']['base_sequence_p1'],
@@ -33,9 +27,9 @@ def get_hyperparameters(train_df, cols_features, splits, options,
     col_label = options['input']['columns']['target']
 
     # Get DataFrames for peptide sequences, features and labels
-    pepseq_df = train_df[cols_pepseq]
-    features_df = train_df[cols_features]
-    labels_df = train_df[col_label].astype(bool)
+    pepseq_df = train_df.select(cols_pepseq)
+    features_df = train_df.select(cols_features)
+    labels_df = train_df[col_label]
 
     # Import model
     model_class = options['rescoring']['model_class']
@@ -62,11 +56,10 @@ def get_hyperparameters(train_df, cols_features, splits, options,
             pep1_id_col=options['input']['columns']['base_sequence_p1'],
             pep2_id_col=options['input']['columns']['base_sequence_p2'],
             target_col=col_label,
-            logger=logger,
         )
         splits = kf.splits_by_peptides(
-            df=train_df,
-            pepseqs=pepseq_df
+            df=train_df.to_pandas(),
+            pepseqs=pepseq_df.to_pandas()
         )
 
     max_jobs = options['rescoring']['max_jobs']
@@ -86,7 +79,7 @@ def get_hyperparameters(train_df, cols_features, splits, options,
         logger=logger
     )
 
-    with mp.Pool(processes=max_jobs) as pool:
+    with mp.get_context("spawn").Pool(processes=max_jobs) as pool:
         # Only run multiprocessing for single core models
         if is_mp_model:
             param_scores = [
@@ -103,7 +96,7 @@ def get_hyperparameters(train_df, cols_features, splits, options,
             ]
 
         # Resolve (potentially) async results
-        param_scores = async_result_resolving.resolve(param_scores, logger=logger)
+        param_scores = async_result_resolving.resolve(param_scores)
 
     # Get the best parameters based on metric
     if options['rescoring']['minimize_metric']:
@@ -117,9 +110,13 @@ def get_hyperparameters(train_df, cols_features, splits, options,
     return best_params
 
 
-def _try_parameters(features_df, labels_df, splits, params, options, logger: logging.Logger):
+def _try_parameters(features_df: pl.DataFrame,
+                    labels_df: pl.DataFrame,
+                    splits,
+                    params,
+                    options,
+                    logger):
     # Create child logger for parameter configuration
-    #logger = logger.getChild(f"{hex(abs(hash(str(params))))}")
     logger.debug(f"Params: {params}")
 
     # Import classifier model
@@ -144,22 +141,35 @@ def _try_parameters(features_df, labels_df, splits, params, options, logger: log
         train_idx, test_idx = fold
 
         # Get fold's train features and labels
-        fold_train_features_df = features_df.loc[train_idx]
-        fold_train_labels_df = labels_df.loc[train_idx]
+        fold_train_features_df = features_df[train_idx.to_numpy()]
+        fold_train_labels_df = labels_df[train_idx.to_numpy()]
 
         # Get fold's test features and labels
-        fold_test_features_df = features_df.loc[test_idx]
-        fold_test_labels_df = labels_df.loc[test_idx]
+        fold_test_features_df = features_df[test_idx.to_numpy()]
+        fold_test_labels_df = labels_df[test_idx.to_numpy()]
 
         # Train fold classifier
         clf = model(**params)
-        clf.fit(fold_train_features_df, fold_train_labels_df)
-        test_predictions = clf.predict(fold_test_features_df)
+        clf.fit(
+            fold_train_features_df.to_numpy(),
+            fold_train_labels_df.to_numpy()
+        )
+        test_predictions = clf.predict(fold_test_features_df.to_numpy())
 
         # Evaluate fold model
-        score = metric(fold_test_labels_df, test_predictions, labels=[0, 1])
-        accuracy = accuracy_score(fold_test_labels_df, test_predictions,)
-        balanced_accuracy = balanced_accuracy_score(fold_test_labels_df, test_predictions,)
+        score = metric(
+            fold_test_labels_df.to_numpy(),
+            test_predictions,
+            labels=[0, 1]
+        )
+        accuracy = accuracy_score(
+            fold_test_labels_df.to_numpy(),
+            test_predictions,
+        )
+        balanced_accuracy = balanced_accuracy_score(
+            fold_test_labels_df.to_numpy(),
+            test_predictions,
+        )
 
         # Store evaluation
         scores.append(score)

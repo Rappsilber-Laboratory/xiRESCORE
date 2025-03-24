@@ -49,7 +49,7 @@ def self_or_between_mp(df, col_prot1='protein_p1', col_prot2='protein_p2', decoy
     ]
     print('slicing done')
     print(f"Pool size: {pool_size}")
-    with mp.Pool(processes=pool_size) as pool:
+    with mp.get_context("spawn").Pool(processes=pool_size) as pool:
         job_self_between = partial(
             self_or_between,
             decoy_adj=decoy_adj,
@@ -83,7 +83,7 @@ def calculate_fdr(df,
         n_slices = min([n_slices, max_slices])
     slice_size = ceil(len(df)/n_slices)
 
-    with mp.Pool(10) as pool:
+    with mp.get_context("spawn").Pool(10) as pool:
         # Calculate sliced cumsum
         tt_cumsum_ares = []
         td_cumsum_ares = []
