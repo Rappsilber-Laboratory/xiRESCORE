@@ -151,7 +151,7 @@ def select(input_data, options):
         )
         hist_dx_scaled = (hist_dx_capped * dx_scale_fact).round().astype(int)
 
-        train_decoys = pl.DataFrame(schema=input_data.schema)
+        train_decoys = pl.DataFrame(schema=df.schema)
         for i, n in enumerate(hist_dx_scaled):
             if n == 0:
                 continue

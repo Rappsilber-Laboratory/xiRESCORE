@@ -30,16 +30,16 @@ def generate(df: pl.DataFrame, options: dict, do_self_between=False, do_fdr=Fals
         )
     # Generate target column from decoy_class
     if input_cols['target'] not in df.columns:
-        df.with_columns(
-            (pl.col(input_cols['decoy_class']) == 'TT').alias(input_cols['target'])
+        df = df.with_columns(
+            isTT=(pl.col(input_cols['decoy_class']) == 'TT').alias(input_cols['target'])
         )
     # Calculte self_between from protein_p1, and protein_p2
     if do_self_between and input_cols['self_between'] not in df.columns:
         protein_p1_list = pl.col(input_cols['protein_p1'])
         protein_p2_list = pl.col(input_cols['protein_p2'])
-        if df[input_cols['protein_p1']].dtype is pl.String:
+        if type(df[input_cols['protein_p1']].dtype) is pl.String:
             protein_p1_list = protein_p1_list.str.split(';')
-        if df[input_cols['protein_p2']].dtype is pl.String:
+        if type(df[input_cols['protein_p2']].dtype) is pl.String:
             protein_p2_list = protein_p2_list.str.split(';')
         protein_p1_list = protein_p1_list.list.eval(
             pl.element().str.replace_all(options['input']['constants']['decoy_adjunct'], '')
@@ -49,7 +49,13 @@ def generate(df: pl.DataFrame, options: dict, do_self_between=False, do_fdr=Fals
         )
         overlap_expr = protein_p1_list.list.set_intersection(protein_p2_list)
         df = df.with_columns(
-            pl.when(overlap_expr == 0).then(pl.lit('between')).otherwise(pl.lit('self'))
+            fdr_group = pl.when(
+                overlap_expr.list.len() == 0
+            ).then(
+                pl.lit('between')
+            ).otherwise(
+                pl.lit('self')
+            )
         )
     # Calculate fdr from self_between and score
     if do_fdr and input_cols['fdr'] not in df.columns:

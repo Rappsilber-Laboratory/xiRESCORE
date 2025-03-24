@@ -11,6 +11,7 @@ import tempfile
 import subprocess
 import os
 import numpy as np
+import yaml
 from xirescore.XiRescore import XiRescore
 
 
@@ -316,3 +317,13 @@ def test_full_cli_parquet_rescoring():
 
         assert result.returncode == 0, f"CLI command failed with error: {result.stderr}"
         assert os.path.exists(f'{tmpdirname}/result.parquet'), f"Output file was not created."
+
+def test_eclp():
+    df_standard = pl.read_parquet('eclp-bs3.parquet')
+    with open('config_kojak.yaml', 'r') as file:
+        options = yaml.safe_load(file)
+    rescorer = XiRescore(
+        input_path=df_standard.to_pandas(),
+        options=options,
+    )
+    rescorer.run()
