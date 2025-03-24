@@ -37,9 +37,9 @@ def generate(df: pl.DataFrame, options: dict, do_self_between=False, do_fdr=Fals
     if do_self_between and input_cols['self_between'] not in df.columns:
         protein_p1_list = pl.col(input_cols['protein_p1'])
         protein_p2_list = pl.col(input_cols['protein_p2'])
-        if df[input_cols['protein_p1']].dtype is not pl.String:
-            protein_p1_list = protein_p1_list
-        if df[input_cols['protein_p2']].dtype is not pl.String:
+        if df[input_cols['protein_p1']].dtype is pl.String:
+            protein_p1_list = protein_p1_list.str.split(';')
+        if df[input_cols['protein_p2']].dtype is pl.String:
             protein_p2_list = protein_p2_list.str.split(';')
         protein_p1_list = protein_p1_list.list.eval(
             pl.element().str.replace_all(options['input']['constants']['decoy_adjunct'], '')
