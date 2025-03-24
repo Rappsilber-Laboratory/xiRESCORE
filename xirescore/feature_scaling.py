@@ -12,7 +12,7 @@ def get_scaler(df: pl.DataFrame, options: dict):
     Normalize the features and drop NaN-values if necessary.
     """
     features = get_features(df, options)
-    df_features = df.select(features).to_numpy()
+    df_features = df.select(features)
 
     Scaler: ClassifierMixin.__class__ = getattr(preprocessing, options['rescoring']['scaler'])
     scaler_options = options['rescoring']['scaler_params']
