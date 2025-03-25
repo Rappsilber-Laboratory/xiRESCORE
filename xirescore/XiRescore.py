@@ -173,7 +173,7 @@ class XiRescore:
 
         self._logger.info("Train models")
         self.models, self.splits = training.train(
-            train_df=self.train_df,
+            train_df=train_df_transformed,
             cols_features=self.train_features,
             clf_params=model_params,
             splits=splits,
