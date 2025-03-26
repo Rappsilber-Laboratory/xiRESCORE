@@ -365,15 +365,16 @@ class XiRescore:
         df_top_rank = df_scores.group_by(cols_spectra).agg(
             pl.max(f'{col_rescore}').alias(f'{col_rescore}_max'),
             pl.max(f'{col_rescore}').alias(f'{col_rescore}_min'),
+            pl.col(col_rescore).neg().rank('dense').alias(f'{col_rescore}_rank'),
         )
         df_scores = df_scores.join(
             df_top_rank,
             on=list(cols_spectra)
         )
         df_scores = df_scores.with_columns(
-            pl.col(col_rescore).neg().rank('dense').alias(f'{col_rescore}_rank')
-        ).with_columns(
-            (pl.col(f'{col_rescore}_rank') == 1).alias(f'{col_rescore}_{col_top_ranking}')
+            (
+                pl.col(col_rescore) == pl.col(f'{col_rescore}_max')
+            ).alias(f'{col_rescore}_{col_top_ranking}')
         )
 
         return df_scores
