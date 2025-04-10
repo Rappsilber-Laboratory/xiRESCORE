@@ -162,6 +162,7 @@ class XiRescore:
         train_df_transformed[self.train_features] = self.scaler.transform(
             train_df_transformed[self.train_features]
         )
+        train_df_transformed = train_df_transformed.fill_nan(0)
 
         self._logger.info("Perform hyperparameter optimization")
         model_params = get_hyperparameters(
@@ -295,6 +296,7 @@ class XiRescore:
             ),
             schema=self.train_features
         )
+        df_scaled_features = df_scaled_features.fill_nan(0)
 
         # Rescore DF
         df_scores = rescoring.rescore(
