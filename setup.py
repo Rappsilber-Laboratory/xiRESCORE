@@ -33,7 +33,7 @@ requirements = [
     "psycopg2>=2.9",
     "python-logging-loki",
     "fastparquet>=2022.11.0",
-    "pyarrow~=17.0.0",
+    "pyarrow",
     "scipy>=1.0.1",
     "setuptools~=71.1.0",
     "xiutilities~=1.2.3",

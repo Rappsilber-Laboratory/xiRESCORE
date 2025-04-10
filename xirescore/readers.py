@@ -24,17 +24,17 @@ def read_spectra_ids(path, spectra_cols=None) -> list[int]:
         raise ValueError('Filetype {file_type} requires parameter `spectra_cols`!')
 
     if file_type == 'csv':
-        return pl.scan_csv(path) \
+        return pl.scan_csv(path, ignore_errors=True, null_values=['∞', '-∞']) \
             .select(pl.struct(spectra_cols).hash()) \
             .unique() \
             .collect().to_series().to_list()
     if file_type == 'tsv':
-        return pl.scan_csv(path, separator='\t') \
+        return pl.scan_csv(path, separator='\t', ignore_errors=True, null_values=['∞', '-∞']) \
             .select(pl.struct(spectra_cols).hash()) \
             .unique() \
             .collect().to_series().to_list()
     if file_type == 'parquet':
-        return pl.scan_parquet(path) \
+        return pl.scan_parquet(path, ignore_errors=True, null_values=['∞', '-∞']) \
             .select(pl.struct(spectra_cols).hash()) \
             .unique() \
             .collect().to_series().to_list()
@@ -98,7 +98,7 @@ def read_spectra_range_parquet(path,
                                sequence_p2_col='sequence_p2',
                                only_pairs=True):
     # Filters for spectrum columns
-    df = pl.scan_parquet(path)
+    df = pl.scan_parquet(path, ignore_errors=True, null_values=['∞', '-∞'])
     # Generate filters
     filters = (
         (pl.struct(spectra_cols).hash() >= spectra_from) &
@@ -119,7 +119,7 @@ def read_spectra_range_csv(path,
                            only_pairs=True,
                            sep=','):
     # Filters for spectrum columns
-    df = pl.scan_csv(path, separator=sep)
+    df = pl.scan_csv(path, separator=sep, ignore_errors=True, null_values=['∞', '-∞'])
     # Generate filters
     filters = (
         (pl.struct(spectra_cols).hash() >= spectra_from) &
@@ -158,7 +158,7 @@ def read_sample(input_data,
         input_data = pl.DataFrame(input_data)
     if type(input_data) is pl.DataFrame:
         scan_filter = pl.lit(True)
-        if only_top_ranking:
+        if only_top_ranking and top_ranking_col in input_data.collect_schema().names():
             scan_filter &= pl.col(top_ranking_col)
         if only_pairs:
             scan_filter &= pl.col(sequence_p2_col).is_not_null()
@@ -191,6 +191,7 @@ def read_sample(input_data,
     if file_type == 'parquet':
         return read_sample_parquet(
             input_data,
+            ignore_errors=True,
             sample=sample,
             sequence_p2_col=sequence_p2_col,
             only_top_ranking=only_top_ranking,
@@ -207,14 +208,16 @@ def read_sample_parquet(path: str,
                         only_top_ranking=False,
                         only_pairs=True,
                         random_state=random.randint(0, 2**32-1)):
+    df_scan = pl.scan_parquet(path, ignore_errors=True, null_values=['∞', '-∞'])
+    
     scan_filter = pl.lit(True)
-    if only_top_ranking:
+    if only_top_ranking and top_ranking_col in df_scan.columns:
         scan_filter &= pl.col(top_ranking_col)
     if only_pairs:
         scan_filter &= pl.col(sequence_p2_col).is_not_null()
         scan_filter &= pl.col(sequence_p2_col) != ''
 
-    df_scan = pl.scan_parquet(path).filter(scan_filter)
+    df_scan = df_scan.filter(scan_filter)
 
     n_total = df_scan.select(pl.count()).collect().item()
     every_nth = ceil(n_total / sample)
@@ -229,15 +232,16 @@ def read_sample_csv(path,
                     sequence_p2_col='sequence_p2',
                     only_pairs=True,
                     only_top_ranking=False,):
+    df_scan = pl.scan_csv(path, separator=sep, ignore_errors=True, null_values=['∞', '-∞'])
+
     scan_filter = pl.lit(True)
-    if only_top_ranking:
+    if only_top_ranking and top_ranking_col in df_scan.collect_schema().names():
         scan_filter &= pl.col(top_ranking_col)
     if only_pairs:
         scan_filter &= pl.col(sequence_p2_col).is_not_null()
         scan_filter &= pl.col(sequence_p2_col) != ''
 
-    df_scan = pl.scan_csv(path, separator=sep).filter(scan_filter)
-
+    df_scan = df_scan.filter(scan_filter)
     n_total = df_scan.select(pl.count()).collect().item()
     every_nth = ceil(n_total / sample)
 
