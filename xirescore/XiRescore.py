@@ -331,10 +331,11 @@ class XiRescore:
         ], how="horizontal")
 
         self._logger.info('Merge slice info into batch')
-        df_scores = df_slice.join(
-            df_scores,
+        df_scores = df_scores.join(
+            df_slice,
             on=cols_merge,
-            how='right',
+            how='left',
+            maintain_order='left'
         )
         df_scores = df_scores.with_columns(
             pl.col(f'{col_rescore}_slice').fill_null(-1)
@@ -369,7 +370,8 @@ class XiRescore:
         )
         df_scores = df_scores.join(
             df_top_rank,
-            on=list(cols_spectra)
+            on=list(cols_spectra),
+            maintain_order='left'
         )
         df_scores = df_scores.with_columns(
             (
