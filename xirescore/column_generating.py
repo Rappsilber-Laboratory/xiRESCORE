@@ -42,7 +42,7 @@ def generate(df: pl.DataFrame, options: dict, do_self_between=False, do_fdr=Fals
     # Generate target column from decoy_class
     if input_cols['is_tt'] not in df.columns:
         df = df.with_columns(
-            (pl.col(input_cols['decoy_class']) == 'TT').alias(input_cols['is_tt'])
+            (pl.col(input_cols['decoy_class']) == consts['tt_class']).alias(input_cols['is_tt'])
         )
     # Calculte self_between from protein_p1, and protein_p2
     if do_self_between and input_cols['self_between'] not in df.columns:
