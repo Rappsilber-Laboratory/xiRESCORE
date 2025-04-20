@@ -35,4 +35,4 @@ def get_features(df: pl.DataFrame, options: dict):
     if len(absent_features) > 0:
         logger.warning(f"Did not find some features: {absent_features}")
 
-    return features
+    return list(set(features))
