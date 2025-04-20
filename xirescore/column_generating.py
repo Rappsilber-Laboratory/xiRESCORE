@@ -21,7 +21,7 @@ def generate(df: pl.DataFrame, options: dict, do_self_between=False, do_fdr=Fals
     # Generate decoy_p1/2
     ordered_decoy_class = (consts['td_class'] is not None) and (consts['dt_class'] is not None)
     if input_cols['decoy_class'] in df.columns and ordered_decoy_class:
-        pl.with_columns(
+        df = df.with_columns(
             (
                 pl.col(input_cols['decoy_class']) in [consts['tt_class'], consts['td_class']]
             ).alias(input_cols['decoy_p1']),
