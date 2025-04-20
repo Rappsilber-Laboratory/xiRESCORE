@@ -11,7 +11,7 @@ import polars as pl
 from fastparquet import ParquetFile as FPParquetFile
 
 
-def read_spectra_ids(path, spectra_cols=None) -> list[int]:
+def read_spectra_ids(path, spectra_cols=None, schema_overrides={}) -> list[int]:
     if type(path) in [pd.DataFrame, pl.DataFrame]:
         df = pl.DataFrame(path)
         return df.select(pl.struct(spectra_cols).hash())\
@@ -24,13 +24,22 @@ def read_spectra_ids(path, spectra_cols=None) -> list[int]:
         raise ValueError('Filetype {file_type} requires parameter `spectra_cols`!')
 
     if file_type == 'csv':
-        return pl.scan_csv(path, ignore_errors=True, null_values=['∞', '-∞']) \
-            .select(pl.struct(spectra_cols).hash()) \
+        return pl.scan_csv(
+                path,
+                ignore_errors=True,
+                null_values=['∞', '-∞'],
+                schema_overrides=schema_overrides,
+            ).select(pl.struct(spectra_cols).hash()) \
             .unique() \
             .collect().to_series().to_list()
     if file_type == 'tsv':
-        return pl.scan_csv(path, separator='\t', ignore_errors=True, null_values=['∞', '-∞']) \
-            .select(pl.struct(spectra_cols).hash()) \
+        return pl.scan_csv(
+                path,
+                separator='\t',
+                ignore_errors=True,
+                null_values=['∞', '-∞'],
+                schema_overrides=schema_overrides,
+            ).select(pl.struct(spectra_cols).hash()) \
             .unique() \
             .collect().to_series().to_list()
     if file_type == 'parquet':
@@ -45,7 +54,8 @@ def read_spectra_range(input: Union[str, pd.DataFrame],
                        spectra_to: int,
                        spectra_cols: Sequence = None,
                        sequence_p2_col='sequence_p2',
-                       only_pairs=True,):
+                       only_pairs=True,
+                       schema_overrides={}):
     # Convert pandas to polars
     if type(input) is pd.DataFrame:
         input = pl.DataFrame(input)
@@ -69,6 +79,7 @@ def read_spectra_range(input: Union[str, pd.DataFrame],
             spectra_cols=spectra_cols,
             sequence_p2_col=sequence_p2_col,
             only_pairs=only_pairs,
+            schema_overrides=schema_overrides,
         )
     if file_type == 'tsv':
         return read_spectra_range_csv(
@@ -79,6 +90,7 @@ def read_spectra_range(input: Union[str, pd.DataFrame],
             spectra_cols=spectra_cols,
             sequence_p2_col=sequence_p2_col,
             only_pairs=only_pairs,
+            schema_overrides=schema_overrides,
         )
     if file_type == 'parquet':
         return read_spectra_range_parquet(
@@ -117,9 +129,16 @@ def read_spectra_range_csv(path,
                            spectra_cols: Sequence,
                            sequence_p2_col='sequence_p2',
                            only_pairs=True,
-                           sep=','):
+                           sep=',',
+                           schema_overrides={}):
     # Filters for spectrum columns
-    df = pl.scan_csv(path, separator=sep, ignore_errors=True, null_values=['∞', '-∞'])
+    df = pl.scan_csv(
+        path,
+        separator=sep,
+        ignore_errors=True,
+        null_values=['∞', '-∞'],
+        schema_overrides=schema_overrides,
+    )
     # Generate filters
     filters = (
         (pl.struct(spectra_cols).hash() >= spectra_from) &
@@ -153,7 +172,8 @@ def read_sample(input_data,
                 top_ranking_col='top_ranking',
                 sequence_p2_col='sequence_p2',
                 only_top_ranking=False,
-                only_pairs=True,) -> pl.DataFrame:
+                only_pairs=True,
+                schema_overrides={}) -> pl.DataFrame:
     if type(input_data) is pd.DataFrame:
         input_data = pl.DataFrame(input_data)
     if type(input_data) is pl.DataFrame:
@@ -177,6 +197,7 @@ def read_sample(input_data,
             sequence_p2_col=sequence_p2_col,
             only_top_ranking=only_top_ranking,
             only_pairs=only_pairs,
+            schema_overrides=schema_overrides,
         )
     if file_type == 'tsv':
         return read_sample_csv(
@@ -187,6 +208,7 @@ def read_sample(input_data,
             only_top_ranking=only_top_ranking,
             sequence_p2_col=sequence_p2_col,
             only_pairs=only_pairs,
+            schema_overrides=schema_overrides,
         )
     if file_type == 'parquet':
         return read_sample_parquet(
@@ -230,8 +252,15 @@ def read_sample_csv(path,
                     top_ranking_col='top_ranking',
                     sequence_p2_col='sequence_p2',
                     only_pairs=True,
-                    only_top_ranking=False,):
-    df_scan = pl.scan_csv(path, separator=sep, ignore_errors=True, null_values=['∞', '-∞'])
+                    only_top_ranking=False,
+                    schema_overrides={}):
+    df_scan = pl.scan_csv(
+        path,
+        separator=sep,
+        ignore_errors=True,
+        null_values=['∞', '-∞'],
+        schema_overrides=schema_overrides
+    )
 
     scan_filter = pl.lit(True)
     if only_top_ranking and top_ranking_col in df_scan.collect_schema().names():

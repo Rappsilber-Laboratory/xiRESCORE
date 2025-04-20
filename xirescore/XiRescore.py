@@ -220,6 +220,16 @@ class XiRescore:
             spectra_to = spectra_range[-1]
             logger.info(f'Start rescoring spectra batch {i_batch+1}/{n_batches} with `{spectra_from}` to `{spectra_to}`')
 
+            # Generate schema overrides
+            float_cols = self._options['input']['columns']['features']
+            float_cols.append(
+                self._options['input']['columns']['score']
+            )
+            schema_overrides = {
+                c: pl.Float64
+                for c in float_cols
+            }
+
             # Read batch
             df_batch = readers.read_spectra_range(
                 input=self._input,
@@ -228,6 +238,7 @@ class XiRescore:
                 spectra_cols=cols_spectra,
                 sequence_p2_col=self._options['input']['columns']['base_sequence_p2'],
                 only_pairs=True,
+                schema_overrides=schema_overrides
             )
             logger.info(f'Batch contains {len(df_batch):,.0f} samples')
             logger.debug(f'Batch uses approx. {df_batch.estimated_size("mb"):,.2f}MB of RAM')

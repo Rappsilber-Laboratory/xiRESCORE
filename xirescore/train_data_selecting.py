@@ -37,6 +37,16 @@ def select(input_data, options):
     fdr_cutoff = options['rescoring']['train_fdr_threshold']
     val_self = options['input']['constants']['self']
 
+    # Generate schema overrides
+    float_cols = options['input']['columns']['features']
+    float_cols.append(
+        options['input']['columns']['score']
+    )
+    schema_overrides = {
+        c: pl.Float64
+        for c in float_cols
+    }
+
     # Read input data
     df = readers.read_sample(
         input_data,
@@ -45,6 +55,7 @@ def select(input_data, options):
         sequence_p2_col=sequence_p2_col,
         only_top_ranking=True,
         only_pairs=True,
+        schema_overrides=schema_overrides,
     )
     logger.debug(f'Fetched {len(df)} top ranking samples')
 
