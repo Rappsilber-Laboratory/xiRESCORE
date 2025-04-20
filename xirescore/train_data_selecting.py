@@ -33,7 +33,7 @@ def select(input_data, options):
     col_self_between = options['input']['columns']['self_between']
     col_fdr = options['input']['columns']['fdr']
     col_native_score = options['input']['columns']['score']
-    col_target = options['input']['columns']['target']
+    col_target = options['input']['columns']['is_tt']
     fdr_cutoff = options['rescoring']['train_fdr_threshold']
     val_self = options['input']['constants']['self']
 
@@ -52,7 +52,7 @@ def select(input_data, options):
     df = generate_columns(df, options=options, do_fdr=True, do_self_between=True)
 
     # Get scaler
-    scaler = get_scaler(df, options)
+    scaler, features = get_scaler(df, options)
 
     # Selection mode: self-targets-all-decoys
     logger.info(f'Use selection mode {selection_mode}')
@@ -177,7 +177,7 @@ def select(input_data, options):
     else:
         raise TrainDataError(f"Unknown train data selection mode: {selection_mode}.")
 
-    return train_data_df, scaler
+    return train_data_df, scaler, features
 
 
 class TrainDataError(Exception):

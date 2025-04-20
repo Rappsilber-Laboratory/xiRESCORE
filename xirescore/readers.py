@@ -34,7 +34,7 @@ def read_spectra_ids(path, spectra_cols=None) -> list[int]:
             .unique() \
             .collect().to_series().to_list()
     if file_type == 'parquet':
-        return pl.scan_parquet(path, ignore_errors=True, null_values=['∞', '-∞']) \
+        return pl.scan_parquet(path) \
             .select(pl.struct(spectra_cols).hash()) \
             .unique() \
             .collect().to_series().to_list()
@@ -98,7 +98,7 @@ def read_spectra_range_parquet(path,
                                sequence_p2_col='sequence_p2',
                                only_pairs=True):
     # Filters for spectrum columns
-    df = pl.scan_parquet(path, ignore_errors=True, null_values=['∞', '-∞'])
+    df = pl.scan_parquet(path)
     # Generate filters
     filters = (
         (pl.struct(spectra_cols).hash() >= spectra_from) &
@@ -191,7 +191,6 @@ def read_sample(input_data,
     if file_type == 'parquet':
         return read_sample_parquet(
             input_data,
-            ignore_errors=True,
             sample=sample,
             sequence_p2_col=sequence_p2_col,
             only_top_ranking=only_top_ranking,
@@ -208,8 +207,8 @@ def read_sample_parquet(path: str,
                         only_top_ranking=False,
                         only_pairs=True,
                         random_state=random.randint(0, 2**32-1)):
-    df_scan = pl.scan_parquet(path, ignore_errors=True, null_values=['∞', '-∞'])
-    
+    df_scan = pl.scan_parquet(path)
+
     scan_filter = pl.lit(True)
     if only_top_ranking and top_ranking_col in df_scan.columns:
         scan_filter &= pl.col(top_ranking_col)

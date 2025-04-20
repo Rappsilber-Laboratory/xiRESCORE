@@ -12,15 +12,9 @@ from xirescore import async_result_resolving
 from xirescore.NoOverlapKFold import NoOverlapKFold
 
 
-def train(train_df: pl.DataFrame, cols_features, clf_params, options, splits=None,
-          logger: logging.Logger = None, loglevel=logging.DEBUG):
-    # Create new logger or create child logger from existing one
-    if logger is None:
-        logger = logging.getLogger(__name__)
-        logger.setLevel(loglevel)
-    else:
-        logger = logger.getChild(__name__)
+logger = logging.getLogger(__name__)
 
+def train(train_df: pl.DataFrame, cols_features, clf_params, options, splits=None):
     # Get peptide sequence columns
     cols_pepseq = [
         options['input']['columns']['base_sequence_p1'],
@@ -28,7 +22,7 @@ def train(train_df: pl.DataFrame, cols_features, clf_params, options, splits=Non
     ]
 
     # Get column for target labeling
-    col_label = options['input']['columns']['target']
+    col_label = options['input']['columns']['is_tt']
 
     # Get DataFrames for peptide sequences, features and labels
     pepseq_df = train_df.select(cols_pepseq)
@@ -78,8 +72,7 @@ def train(train_df: pl.DataFrame, cols_features, clf_params, options, splits=Non
                         labels_df=labels_df,
                         fold=fold,
                         params=clf_params,
-                        options=options,
-                        logger=logger
+                        options=options
                     )
                 ]
             else:
@@ -90,8 +83,7 @@ def train(train_df: pl.DataFrame, cols_features, clf_params, options, splits=Non
                         labels_df=labels_df,
                         fold=fold,
                         params=clf_params,
-                        options=options,
-                        logger=logger
+                        options=options
                     )
                 )
             # Add job to the
@@ -101,7 +93,7 @@ def train(train_df: pl.DataFrame, cols_features, clf_params, options, splits=Non
     return clfs, splits
 
 
-def train_fold(features_df, labels_df, fold, params, options, logger):
+def train_fold(features_df, labels_df, fold, params, options):
     # Import classifier model
     model_class = options['rescoring']['model_class']
     model_name = options['rescoring']['model_name']

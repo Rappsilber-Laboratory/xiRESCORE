@@ -24,7 +24,7 @@ def get_hyperparameters(train_df: pl.DataFrame, cols_features, splits, options):
     ]
 
     # Get column for target labeling
-    col_label = options['input']['columns']['target']
+    col_label = options['input']['columns']['is_tt']
 
     # Get DataFrames for peptide sequences, features and labels
     pepseq_df = train_df.select(cols_pepseq)
@@ -75,8 +75,7 @@ def get_hyperparameters(train_df: pl.DataFrame, cols_features, splits, options):
         features_df=features_df,
         labels_df=labels_df,
         splits=splits,
-        options=options,
-        logger=logger
+        options=options
     )
 
     with mp.get_context("spawn").Pool(processes=max_jobs) as pool:
@@ -114,8 +113,7 @@ def _try_parameters(features_df: pl.DataFrame,
                     labels_df: pl.DataFrame,
                     splits,
                     params,
-                    options,
-                    logger):
+                    options,):
     # Create child logger for parameter configuration
     logger.debug(f"Params: {params}")
 

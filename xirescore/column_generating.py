@@ -1,10 +1,9 @@
 import polars as pl
-
-from xirescore.bi_fdr import self_or_between_mp, calculate_bi_fdr
-
+from xifdr import fdr
 
 def generate(df: pl.DataFrame, options: dict, do_self_between=False, do_fdr=False) -> pl.DataFrame:
     input_cols = options['input']['columns']
+    consts = options['input']['constants']
     cols_spectra = input_cols['spectrum_id']
     col_score = input_cols['score']
     # Generate top_ranking
@@ -19,17 +18,25 @@ def generate(df: pl.DataFrame, options: dict, do_self_between=False, do_fdr=Fals
         df = df.with_columns(
             top_ranking=pl.col(col_score) == pl.col(f'{col_score}_max')
         )
+    # Generate decoy_p1/2
+    ordered_decoy_class = (consts['td_class'] is not None) and (consts['dt_class'] is not None)
+    if input_cols['decoy_class'] in df.columns and ordered_decoy_class:
+        pl.with_columns(
+            decoy_p1=pl.col(input_cols['decoy_class']) in [consts['tt_class'], consts['td_class']],
+            decoy_p2=pl.col(input_cols['decoy_class']) in [consts['dd_class'], consts['dt_class']],
+        )
     # Generate decoy_class column from decoy_p1 and decoy_p2
     if input_cols['decoy_class'] not in df.columns:
         tt_expr = pl.col(input_cols['decoy_p1']).not_() & pl.col(input_cols['decoy_p2']).not_()
         dd_expr = pl.col(input_cols['decoy_p1']) & pl.col(input_cols['decoy_p2'])
         df = df.with_columns(
-            decoy_class=pl.when(tt_expr).then(pl.lit('TT'))\
-                          .when(dd_expr).then(pl.lit('DD'))\
-                          .otherwise(pl.lit('TD'))
+            pl.when(tt_expr).then(pl.lit(consts['tt_class']))\
+                .when(dd_expr).then(pl.lit(consts['dd_class']))\
+                .otherwise(pl.lit(consts['td_class']))\
+                .alias(input_cols['decoy_class'])
         )
     # Generate target column from decoy_class
-    if input_cols['target'] not in df.columns:
+    if input_cols['is_tt'] not in df.columns:
         df = df.with_columns(
             isTT=(pl.col(input_cols['decoy_class']) == 'TT').alias(input_cols['target'])
         )
@@ -59,13 +66,34 @@ def generate(df: pl.DataFrame, options: dict, do_self_between=False, do_fdr=Fals
         )
     # Calculate fdr from self_between and score
     if do_fdr and input_cols['fdr'] not in df.columns:
-        fdr_pd = calculate_bi_fdr(
-            df.filter(input_cols['top_ranking']).to_pandas(),
-            score_col=input_cols['score'],
-            decoy_class=input_cols['decoy_class'],
-            fdr_group_col=input_cols['self_between'],
+        fdr_ser = fdr.single_grouped_fdr(
+            df.with_columns(
+                score=pl.col(input_cols['score']),
+                decoy_class=polars_dict_map(
+                    input_cols['decoy_class'],
+                    {
+                        consts['tt_class']: 'TT',
+                        consts['td_class']: 'TD',
+                        consts['dt_class']: 'TD',
+                        consts['dd_class']: 'DD',
+                    }
+                ),
+                fdr_group=pl.col(input_cols['self_between']),
+            ).with_columns(
+                TT=pl.col('decoy_class')=='TT',
+                TD=pl.col('decoy_class')=='TD',
+                DD=pl.col('decoy_class')=='DD',
+            ),
         )
         df = df.with_columns(
-            fdr=pl.Series(fdr_pd)
+            fdr=fdr_ser
         )
     return df
+
+def polars_dict_map(col_name, d):
+    when_expr = pl.when(pl.lit(False)).then(pl.col(col_name))  # Base expression
+    for k, v in d.items():
+        when_expr = when_expr.when(
+            pl.col(col_name) == k
+        ).then(pl.lit(v))
+    return when_expr.otherwise(pl.col(col_name))

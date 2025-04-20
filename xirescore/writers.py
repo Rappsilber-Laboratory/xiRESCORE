@@ -13,11 +13,7 @@ from xirescore.readers import get_source_type
 from xirescore.df_serializing import serialize_columns
 
 
-def append_rescorings(output,
-                      df: pd.DataFrame,
-                      options=dict(),
-                      logger=None,
-                      random_seed=random.randint(0,2**32-1)):
+def append_rescorings(output, df: pd.DataFrame):
     output_type = get_source_type(output)
     if output_type == 'csv':
         append_csv(output, df)

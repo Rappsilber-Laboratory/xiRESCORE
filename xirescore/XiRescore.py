@@ -39,14 +39,14 @@ options_merger = Merger(
     ["override"]
 )
 
+logger = logging.getLogger(__name__)
+
 
 class XiRescore:
     def __init__(self,
                  input_path,
                  output_path=None,
-                 options=dict(),
-                 logger=None,
-                 loglevel=logging.DEBUG):
+                 options=dict()):
         """
         Initialize rescorer
 
@@ -56,10 +56,6 @@ class XiRescore:
         :type output_path: str, optional
         :param options: :ref:`options`
         :type options: dict, optional
-        :param logger: Logger to be used. If ``None`` a new logger will be created.
-        :type logger: Logger, optional
-        :param loglevel: Log level to be used with new logger.
-        :type loglevel: int, optional
         """
         # Apply override default options with user-supplied options
         self._options = copy.deepcopy(default_options)
@@ -87,13 +83,6 @@ class XiRescore:
         else:
             self._output = output_path
 
-        # Use supplied logger if present
-        if logger is not None:
-            self._logger = logger
-        else:
-            self._logger = logging.getLogger(__name__)
-
-        self._loglevel = loglevel
         self._true_random_ctr = 0
 
         self.train_df: pl.DataFrame
@@ -108,7 +97,7 @@ class XiRescore:
         """
         Trained models from the f-fold cross-validation.
         """
-        self.scaler: TransformerMixin
+        self.scaler: TransformerMixin = None
         """
         Scaler for feature normalization.
         """
@@ -121,7 +110,7 @@ class XiRescore:
         """
         Run training and rescoring of the input data and write to output
         """
-        self._logger.info("Start full train and rescore run")
+        logger.info("Start full train and rescore run")
         self.train()
         self.rescore()
 
@@ -136,10 +125,10 @@ class XiRescore:
         :param splits: K-fold splits for manual ``train_df``.
         :type splits: Index, optional
         """
-        self._logger.info('Start training')
+        logger.info('Start training')
 
         if train_df is None:
-            self.train_df, self.scaler = train_data_selecting.select(
+            self.train_df, self.scaler, self.train_features = train_data_selecting.select(
                 self._input,
                 self._options,
             )
@@ -150,12 +139,10 @@ class XiRescore:
                 do_fdr=True,
                 do_self_between=True
             )
-            self.scaler = get_scaler(train_df, self._options)
+            _, self.scaler, self.train_features = get_scaler(train_df, self._options)
 
         if splits is not None:
             self.splits = splits
-
-        self.train_features = get_features(self.train_df, self._options)
 
         # Scale features
         train_df_transformed = self.train_df.clone()
@@ -164,7 +151,7 @@ class XiRescore:
         )
         train_df_transformed = train_df_transformed.fill_nan(0)
 
-        self._logger.info("Perform hyperparameter optimization")
+        logger.info("Perform hyperparameter optimization")
         model_params = get_hyperparameters(
             train_df=train_df_transformed,
             cols_features=self.train_features,
@@ -172,13 +159,12 @@ class XiRescore:
             options=self._options,
         )
 
-        self._logger.info("Train models")
+        logger.info("Train models")
         self.models, self.splits = training.train(
             train_df=train_df_transformed,
             cols_features=self.train_features,
             clf_params=model_params,
             splits=splits,
-            logger=self._logger,
             options=self._options,
         )
 
@@ -206,7 +192,7 @@ class XiRescore:
         """
         Run rescoring on input data.
         """
-        self._logger.info('Start rescoring')
+        logger.info('Start rescoring')
         cols_spectra = self._options['input']['columns']['spectrum_id']
         spectra_batch_size = self._options['rescoring']['spectra_batch_size']
 
@@ -221,7 +207,7 @@ class XiRescore:
 
         # Calculate number of batches
         n_batches = ceil(len(spectra)/spectra_batch_size)
-        self._logger.info(f'Rescore in {n_batches} batches')
+        logger.info(f'Rescore in {n_batches} batches')
 
         # Iterate over spectra batches
         df_rescored = pl.DataFrame()
@@ -232,7 +218,7 @@ class XiRescore:
             ]
             spectra_from = spectra_range[0]
             spectra_to = spectra_range[-1]
-            self._logger.info(f'Start rescoring spectra batch {i_batch+1}/{n_batches} with `{spectra_from}` to `{spectra_to}`')
+            logger.info(f'Start rescoring spectra batch {i_batch+1}/{n_batches} with `{spectra_from}` to `{spectra_to}`')
 
             # Read batch
             df_batch = readers.read_spectra_range(
@@ -243,14 +229,14 @@ class XiRescore:
                 sequence_p2_col=self._options['input']['columns']['base_sequence_p2'],
                 only_pairs=True,
             )
-            self._logger.info(f'Batch contains {len(df_batch):,.0f} samples')
-            self._logger.debug(f'Batch uses approx. {df_batch.estimated_size("mb"):,.2f}MB of RAM')
+            logger.info(f'Batch contains {len(df_batch):,.0f} samples')
+            logger.debug(f'Batch uses approx. {df_batch.estimated_size("mb"):,.2f}MB of RAM')
 
             # Rescore batch
             df_batch = self.rescore_df(df_batch)
 
             # Store collected matches
-            self._logger.info('Write out batch')
+            logger.info('Write out batch')
             if type(self._output) is pl.DataFrame:
                 df_rescored = pl.concat([
                     df_rescored,
@@ -259,10 +245,7 @@ class XiRescore:
             else:
                 writers.append_rescorings(
                     self._output,
-                    df_batch,
-                    options=self._options,
-                    logger=self._logger,
-                    random_seed=self._true_random()
+                    df_batch
                 )
 
         # Keep rescored matches when no output is defined
@@ -307,10 +290,10 @@ class XiRescore:
             max_cpu=max_jobs
         )
 
-        self._logger.info('Merge new scores into original data')
+        logger.info('Merge new scores into original data')
 
         # Rescore training data only with test fold classifier
-        self._logger.info('Reconstruct training data slices')
+        logger.info('Reconstruct training data slices')
         cols_merge = list(set(col_csm+cols_spectra))
         df_slice = self.train_df.select(cols_merge)
         df_slice = df_slice.with_columns(
@@ -326,13 +309,13 @@ class XiRescore:
                 ).alias(f'{col_rescore}_slice')
             )
 
-        self._logger.info('Add merge columns to scores DataFrame')
+        logger.info('Add merge columns to scores DataFrame')
         df_scores = pl.concat([
             df,
             df_scores,
         ], how="horizontal")
 
-        self._logger.info('Merge slice info into batch')
+        logger.info('Merge slice info into batch')
         df_scores = df_scores.join(
             df_slice,
             on=cols_merge,
@@ -343,7 +326,7 @@ class XiRescore:
             pl.col(f'{col_rescore}_slice').fill_null(-1)
         )
 
-        self._logger.info('Pick the correct score')
+        logger.info('Pick the correct score')
         score_ser = df_scores.select(
             pl.col(f'^{col_rescore}_[0-9]+$')
         ).cast(pl.List(pl.Float64)).select(
@@ -364,15 +347,19 @@ class XiRescore:
         ).drop('scores_list')
 
         # Calculate top_ranking
-        self._logger.info('Calculate top ranking scores')
+        logger.info('Calculate top ranking scores')
         df_top_rank = df_scores.group_by(cols_spectra).agg(
             pl.max(f'{col_rescore}').alias(f'{col_rescore}_max'),
-            pl.max(f'{col_rescore}').alias(f'{col_rescore}_min'),
+            pl.min(f'{col_rescore}').alias(f'{col_rescore}_min'),
             pl.col(col_rescore).neg().rank('dense').alias(f'{col_rescore}_rank'),
-        )
+            pl.col(col_rescore),
+        ).explode([
+            col_rescore,
+            f'{col_rescore}_rank'
+        ]).unique()
         df_scores = df_scores.join(
             df_top_rank,
-            on=list(cols_spectra),
+            on=list(cols_spectra)+[col_rescore],
             maintain_order='left'
         )
         df_scores = df_scores.with_columns(

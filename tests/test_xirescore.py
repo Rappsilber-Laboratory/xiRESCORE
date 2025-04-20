@@ -49,7 +49,6 @@ def test_full_parquet_rescoring():
             input_path='./tests/fixtures/test_data.parquet',
             output_path=f'{tmpdirname}/result.parquet',
             options=options,
-            logger=logger,
         )
         rescorer.run()
         df_in = pd.read_parquet('./tests/fixtures/test_data.parquet')
@@ -111,7 +110,6 @@ def test_linear_filter():
             input_path=f'{tmpdirname}/input.parquet',
             output_path=f'{tmpdirname}/result.parquet',
             options=options,
-            logger=logger,
         )
         rescorer.run()
         df_out = pd.read_parquet(f'{tmpdirname}/result.parquet')
@@ -163,7 +161,6 @@ def test_full_svc_rescoring():
             input_path='./tests/fixtures/test_data.parquet',
             output_path=f'{tmpdirname}/result.parquet',
             options=options,
-            logger=logger,
         )
         rescorer.run()
         df_in = pd.read_parquet('./tests/fixtures/test_data.parquet')
@@ -205,7 +202,6 @@ def test_full_csv_rescoring():
             input_path='./tests/fixtures/test_data.csv.gz',
             output_path=f'{tmpdirname}/result.csv.gz',
             options=options,
-            logger=logger,
         )
         rescorer.run()
         df_in = pd.read_csv('./tests/fixtures/test_data.csv.gz')
@@ -215,6 +211,8 @@ def test_full_csv_rescoring():
 
 @pytest.mark.df
 def test_full_df_rescoring():
+    random.seed(0)
+    np.random.seed(0)
     df = pl.read_parquet('./tests/fixtures/test_data.parquet')
     logging.basicConfig(
         level=logging.DEBUG,
@@ -252,7 +250,6 @@ def test_full_df_rescoring():
     rescorer = XiRescore(
         input_path=df,
         options=options,
-        logger=logger,
     )
     rescorer.run()
     df_out = rescorer.get_rescored_output()
@@ -262,7 +259,6 @@ def test_full_df_rescoring():
     rescorer = XiRescore(
         input_path=df,
         options=options,
-        logger=logger,
     )
     rescorer.run()
     df_out2 = rescorer.get_rescored_output()
@@ -317,22 +313,3 @@ def test_full_cli_parquet_rescoring():
 
         assert result.returncode == 0, f"CLI command failed with error: {result.stderr}"
         assert os.path.exists(f'{tmpdirname}/result.parquet'), f"Output file was not created."
-
-def test_eclp():
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    )
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
-    df_standard = pl.read_parquet('eclp-bs3.parquet')
-    with open('config_kojak.yaml', 'r') as file:
-        options = yaml.safe_load(file)
-    rescorer = XiRescore(
-        input_path=df_standard.to_pandas(),
-        options=options,
-        logger=logger,
-    )
-    rescorer.run()
-    df_rescored = rescorer.get_rescored_output().to_pandas()
-    pass

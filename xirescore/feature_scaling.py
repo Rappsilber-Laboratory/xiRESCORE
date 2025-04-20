@@ -19,4 +19,4 @@ def get_scaler(df: pl.DataFrame, options: dict):
     scaler = Scaler(**scaler_options)
     scaler.fit(df_features)
 
-    return scaler
+    return scaler, features

@@ -71,7 +71,7 @@ def test_no_overlap_splitting():
     df['base_sequence_p1'] = df['id_p1'].replace(sequences)
     df['base_sequence_p2'] = df['id_p2'].replace(sequences)
     df['isTT'] = random.choices([True, False], k=len(df))
-    kfold = NoOverlapKFold(logger=logger)
+    kfold = NoOverlapKFold()
     splits = kfold.splits_by_peptides(df)
     n_split_samples = 0
     for (train_idx, test_idx) in splits:

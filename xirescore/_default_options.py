@@ -38,8 +38,8 @@ default_options = {
             # Specific classification values are defined under input.constants.
             'self_between': 'fdr_group',
 
-            # Boolean column
-            'target': 'isTT',
+            # Boolean columns
+            'is_tt': 'isTT',
 
             # Decoy class information. Indicates if the CSM is a target-target ("TT"),
             # target-decoy ("TD") or decoy-decoy ("DD")
@@ -67,6 +67,12 @@ default_options = {
 
             # String added to decoy protein names. Will be removed for self/between classification.
             'decoy_adjunct': 'REV_',
+
+            # Decoy class values for decoy_class column.
+            'tt_class': 'TT',
+            'td_class': 'TD',
+            'dt_class': None,  # Optional, only for creating decoy_p1/2 columns from decoy_class.
+            'dd_class': 'DD',
         },
     },
     'rescoring': {

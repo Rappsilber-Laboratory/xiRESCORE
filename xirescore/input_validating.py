@@ -1,7 +1,9 @@
 import logging
 import polars as pl
 
-def validate(df: pl.DataFrame, options, logger: logging.Logger):
+logger = logging.getLogger(__name__)
+
+def validate(df: pl.DataFrame, options):
     # Validate that all feature columns are present
     for fcol in options['input']['columns']['features']:
         if fcol not in df.columns:
@@ -21,7 +23,7 @@ def validate(df: pl.DataFrame, options, logger: logging.Logger):
         raise XiRescoreInputError(f"Missing sequence column `{col_seq2}`.")
 
     # Validate that target column is present
-    col_target = options['input']['columns']['target']
+    col_target = options['input']['columns']['is_tt']
     if col_target not in df.columns:
         raise XiRescoreInputError(f"Missing target column `{col_target}`.")
 

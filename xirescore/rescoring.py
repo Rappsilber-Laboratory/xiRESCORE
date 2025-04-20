@@ -9,12 +9,13 @@ import scipy
 from xirescore import async_result_resolving
 
 
+logger = logging.getLogger(__name__)
+
 def rescore(models,
             df,
             rescore_col,
             apply_logit=False,
-            max_cpu=-1,
-            logger=logging.getLogger(__name__)):
+            max_cpu=-1):
     if not isinstance(df, pl.DataFrame):
         df: pl.DataFrame = pl.DataFrame(df)
     n_procs = max_cpu

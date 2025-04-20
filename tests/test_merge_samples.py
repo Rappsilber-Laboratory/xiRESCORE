@@ -8,6 +8,11 @@ import random
 from xirescore.XiRescore import XiRescore
 import tempfile
 
+if not logging.getLogger().hasHandlers():
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
 
 def test_merge_samples():
     """
@@ -75,7 +80,6 @@ def test_merge_samples():
             input_path=f'{tmpdirname}/input.csv.gz',
             output_path=f'{tmpdirname}/output.csv.gz',
             options=options,
-            logger=logger,
         )
         rescorer.run()
         df_out = pd.read_csv(f'{tmpdirname}/output.csv.gz')

@@ -10,6 +10,7 @@ import logging_loki
 from xirescore.XiRescore import XiRescore
 import xirescore
 
+logger = logging.getLogger(__name__)
 
 def main():
     # Create argument parser
@@ -54,8 +55,6 @@ def main():
         options = ast.literal_eval(args.config_string)
     else:
         options = dict()
-
-    logger = logging.getLogger('xirescore')
 
     # Configure Loki logger
     if args.loki is None:
