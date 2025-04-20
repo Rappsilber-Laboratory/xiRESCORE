@@ -23,10 +23,10 @@ def generate(df: pl.DataFrame, options: dict, do_self_between=False, do_fdr=Fals
     if input_cols['decoy_class'] in df.columns and ordered_decoy_class:
         df = df.with_columns(
             (
-                pl.col(input_cols['decoy_class']) in [consts['tt_class'], consts['td_class']]
+                pl.col(input_cols['decoy_class']).is_in([consts['tt_class'], consts['td_class']])
             ).alias(input_cols['decoy_p1']),
             (
-                pl.col(input_cols['decoy_class']) in [consts['dd_class'], consts['dt_class']]
+                pl.col(input_cols['decoy_class']).is_in([consts['dd_class'], consts['dt_class']])
             ).alias(input_cols['decoy_p2']),
         )
     # Generate decoy_class column from decoy_p1 and decoy_p2
