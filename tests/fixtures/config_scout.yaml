@@ -1,0 +1,77 @@
+rescoring:
+  train_selection_mode: 'self-targets-capped-decoys'
+  random_seed: 0
+input:
+  constants:
+    decoy_adjunct: 'Reverse_'
+    tt_class: FullTarget
+    td_class: AlphaTarget
+    dt_class: BetaTarget
+    dd_class: FullDecoy
+  columns:
+    base_sequence_p1: AlphaPeptide
+    base_sequence_p2: BetaPeptide
+    protein_p1: AlphaMappings
+    protein_p2: BetaMappings
+    decoy_class: Class
+    score: ClassificationScore
+    spectrum_id:
+    - FileName
+    - ScanNumber
+    csm_id:
+    - FileName
+    - ScanNumber
+    - AlphaPeptide
+    - BetaPeptide
+    - AlphaMappings
+    - BetaMappings
+    features:
+    - 'AlphaPos'
+    - 'BetaPos'
+    - 'AlphaPairMH'
+    - 'BetaPairMH'
+    - 'AlphaTheoreticalMH'
+    - 'BetaTheoreticalMH'
+    - 'AlphaPeaksMatched'
+    - 'BetaPeaksMatched'
+    - 'ClassificationScore'
+    - 'AlphaScore'
+    - 'BetaScore'
+    - 'MinScore'
+    - 'AlphaPPM'
+    - 'BetaPPM'
+    - 'PrecursorPPM'
+    - 'TotalIsotope'
+    - 'DiffPPM'
+    - 'MaxPPM'
+    - 'AlphaDeltaCN'
+    - 'BetaDeltaCN'
+    - 'MinDeltaCN'
+    - 'AlphaTagScore'
+    - 'AlphaTagIntensity'
+    - 'AlphaTagLongest'
+    - 'BetaTagScore'
+    - 'BetaTagIntensity'
+    - 'BetaTagLongest'
+    - 'MinTagScore'
+    - 'MinTagIntensity'
+    - 'AlphaDDPScore'
+    - 'BetaDDPScore'
+    - 'MinDDPScore'
+    - 'XlinkxAlpha'
+    - 'XlinkxBeta'
+    - 'XlinkxScore'
+    - 'XlinkxGroupedAlpha'
+    - 'XlinkxGroupedBeta'
+    - 'XlinkxGroupedScore'
+    - 'XlinkxTagAlpha'
+    - 'XlinkxTagBeta'
+    - 'XlinkxTagScore'
+    - 'AlphaPairIntensity'
+    - 'AlphaPairIntensityNorm'
+    - 'BetaPairIntensity'
+    - 'BetaPairIntensityNorm'
+    - 'PairIntensityMulNorm'
+    - 'PoissonScore'
+    - 'XLScore'
+    - 'XLDeltaCN'
