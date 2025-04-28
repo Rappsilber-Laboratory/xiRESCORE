@@ -73,14 +73,9 @@ def generate(df: pl.DataFrame, options: dict, do_self_between=False, do_fdr=Fals
         fdr_ser = fdr.single_grouped_fdr(
             df.with_columns(
                 score=pl.col(input_cols['score']),
-                decoy_class=polars_dict_map(
-                    input_cols['decoy_class'],
-                    {
-                        consts['tt_class']: 'TT',
-                        consts['td_class']: 'TD',
-                        consts['dt_class']: 'TD',
-                        consts['dd_class']: 'DD',
-                    }
+                decoy_class=pl.col(input_cols['decoy_class']).replace(
+                    [consts['tt_class'], consts['td_class'], consts['dt_class'], consts['dd_class']],
+                    ['TT', 'TD', 'DT', 'DD']
                 ),
                 fdr_group=pl.col(input_cols['self_between']),
             ).with_columns(
@@ -93,11 +88,3 @@ def generate(df: pl.DataFrame, options: dict, do_self_between=False, do_fdr=Fals
             fdr=fdr_ser
         )
     return df
-
-def polars_dict_map(col_name, d):
-    when_expr = pl.when(pl.lit(False)).then(pl.col(col_name))  # Base expression
-    for k, v in d.items():
-        when_expr = when_expr.when(
-            pl.col(col_name) == k
-        ).then(pl.lit(v))
-    return when_expr.otherwise(pl.col(col_name))
