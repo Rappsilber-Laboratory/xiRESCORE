@@ -1,3 +1,5 @@
+import sys
+import warnings
 from typing import Callable
 from functools import partial
 import logging
@@ -8,6 +10,7 @@ import numpy as np
 import polars as pl
 import sklearn
 from sklearn.base import ClassifierMixin
+from sklearn.exceptions import ConvergenceWarning
 from sklearn.metrics import accuracy_score, balanced_accuracy_score
 from sklearn.model_selection import ParameterGrid
 
@@ -148,10 +151,16 @@ def _try_parameters(features_df: pl.DataFrame,
 
         # Train fold classifier
         clf = model(**params)
-        clf.fit(
-            fold_train_features_df,
-            fold_train_labels_df
-        )
+        with warnings.catch_warnings(record=True) as caught_warnings:
+            warnings.simplefilter("always", category=ConvergenceWarning)
+            clf.fit(
+                fold_train_features_df,
+                fold_train_labels_df
+            )
+            if len(caught_warnings) > 0:
+                print(f'Warnings for parameters: {params}', file=sys.stderr)
+                for warn in caught_warnings:
+                    print(warn.message, file=sys.stderr)
         test_predictions = clf.predict(fold_test_features_df)
 
         # Evaluate fold model
