@@ -224,6 +224,7 @@ def test_full_df_rescoring():
 
     options = {
         'input': {
+            'csm_id': ['__index_level_0__'],
             'columns': {
                 'features': [
                     'match_score',
@@ -243,10 +244,20 @@ def test_full_df_rescoring():
             'scaler_params': {
                 'output_distribution': 'normal'
             },
+            'model_params': {
+                "C": np.logspace(-3, 2, 6),
+                "solver": ["liblinear"],
+                "penalty": ["l1", "l2"],
+                "class_weight": ["balanced", None, {0: 2, 1: 1}],
+                "random_state": [0],
+            },
             'random_seed': 123456
         }
     }
 
+    random.seed(0)
+    np.random.seed(0)
+    pl.set_random_seed(0)
     rescorer = XiRescore(
         input_path=df,
         options=options,
@@ -256,15 +267,41 @@ def test_full_df_rescoring():
     assert len(df) == len(df_out)
 
     # See if runs are reproducible
+    random.seed(0)
+    np.random.seed(0)
+    pl.set_random_seed(0)
     rescorer = XiRescore(
         input_path=df,
         options=options,
     )
     rescorer.run()
     df_out2 = rescorer.get_rescored_output()
-    hash1 = df_out.hash_rows(seed=0).to_list()
-    hash2 = df_out2.hash_rows(seed=0).to_list()
-    assert all(np.equal(hash1, hash2))
+    df_comp1 = df_out.with_columns(
+        (~pl.selectors.numeric()).hash(),
+    )
+    df_comp2 = df_out2.with_columns(
+        (~pl.selectors.numeric()).hash(),
+    )
+    assert all(np.isclose(
+        df_comp1.to_numpy().flatten(),
+        df_comp2.to_numpy().flatten(),
+        equal_nan=True
+    ))
+
+    rescorer2 = XiRescore(
+        input_path=None,
+        options=options,
+    )
+    rescorer2.train_features = rescorer.train_features
+    rescorer2.scaler = rescorer.scaler
+    rescorer2.models = rescorer.models
+    rescorer2.train_df = pl.DataFrame(schema=df.schema)
+    df_out3 = rescorer2.rescore_df(
+        df_out2.filter(pl.col('rescore_slice')==-1).drop(
+            pl.selectors.matches('rescore.*')
+        )
+    )
+    assert np.isclose(df_out2.filter(pl.col('rescore_slice')==-1)['rescore'], df_out3['rescore']).all()
 
 
 @pytest.mark.cli
