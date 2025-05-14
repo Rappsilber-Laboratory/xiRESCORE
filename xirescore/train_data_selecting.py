@@ -25,15 +25,21 @@ def select(input_data, options):
 
     # Extract options
     selection_mode = options['rescoring']['train_selection_mode']
+    train_unique = options['rescoring']['train_unique_csms']
     train_size_max = options['rescoring']['train_size_max']
     top_sample_size = options['rescoring']['top_sample_size']
     top_ranking_col = options['input']['columns']['top_ranking']
-    sequence_p2_col = options['input']['columns']['base_sequence_p2']
+    col_sequence_p1 = options['input']['columns']['base_sequence_p1']
+    col_sequence_p2 = options['input']['columns']['base_sequence_p2']
+    col_base_sequence_p2 = options['input']['columns']['base_sequence_p2']
     seed = options['rescoring']['random_seed']
     col_self_between = options['input']['columns']['self_between']
     col_fdr = options['input']['columns']['fdr']
     col_native_score = options['input']['columns']['score']
     col_target = options['input']['columns']['is_tt']
+    col_link_pos_p1 = options['input']['columns']['link_pos_p1']
+    col_link_pos_p2 = options['input']['columns']['link_pos_p2']
+    col_charge = options['input']['columns']['charge']
     fdr_cutoff = options['rescoring']['train_fdr_threshold']
     val_self = options['input']['constants']['self']
 
@@ -52,12 +58,22 @@ def select(input_data, options):
         input_data,
         sample=top_sample_size,
         top_ranking_col=top_ranking_col,
-        sequence_p2_col=sequence_p2_col,
+        sequence_p2_col=col_base_sequence_p2,
         only_top_ranking=True,
         only_pairs=True,
         schema_overrides=schema_overrides,
     )
     logger.debug(f'Fetched {len(df)} top ranking samples')
+
+    if train_unique:
+        unique_cols = [
+            col_sequence_p1,
+            col_sequence_p2,
+            col_link_pos_p1,
+            col_link_pos_p2,
+            col_charge,
+        ]
+        df = df.sort(col_native_score, descending=True).unique(subset=unique_cols, keep='first')
 
     # Generate needed columns
     df = generate_columns(df, options=options, do_fdr=True, do_self_between=True)

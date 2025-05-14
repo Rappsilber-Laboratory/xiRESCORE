@@ -6,7 +6,7 @@ from collections.abc import Collection
 from math import ceil
 
 import numpy as np
-import pandas as pd
+from sklearn.decomposition import PCA
 import polars as pl
 from deepmerge import Merger
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -99,6 +99,10 @@ class XiRescore:
         """
         self.scaler: TransformerMixin = None
         """
+        PCA for feature decorrelation
+        """
+        self.pca: PCA = None
+        """
         Scaler for feature normalization.
         """
         self.train_features: list = []
@@ -151,10 +155,18 @@ class XiRescore:
         )
         train_df_transformed = train_df_transformed.fill_nan(0)
 
+        passed_feaures=self.train_features
+        if self._options['rescoring']['pca_n_components'] is not None:
+            self.pca = PCA(n_components=self._options['rescoring']['pca_n_components'])
+            pca_features = self.pca.fit_transform(train_df_transformed[self.train_features])
+            passed_feaures = [f'_pca_feature_{i}' for i  in range(pca_features.shape[1])]
+            train_df_transformed[passed_feaures] = pca_features
+
+
         logger.info("Perform hyperparameter optimization")
         model_params = get_hyperparameters(
             train_df=train_df_transformed,
-            cols_features=self.train_features,
+            cols_features=passed_feaures,
             splits=splits,
             options=self._options,
         )
@@ -162,7 +174,7 @@ class XiRescore:
         logger.info("Train models")
         self.models, self.splits = training.train(
             train_df=train_df_transformed,
-            cols_features=self.train_features,
+            cols_features=passed_feaures,
             clf_params=model_params,
             splits=splits,
             options=self._options,
@@ -284,11 +296,14 @@ class XiRescore:
             col_csm = self._options['input']['columns']['csm_id']
 
         # Scale features
+        df_features = self.scaler.transform(df[self.train_features])
+        passed_feaures = self.train_features
+        if self.pca is not None:
+            df_features = self.pca.transform(df_features)
+            passed_feaures = [f'_pca_feature_{i}' for i in range(df_features.shape[1])]
         df_scaled_features = pl.DataFrame(
-            self.scaler.transform(
-                df[self.train_features]
-            ),
-            schema=self.train_features
+            df_features,
+            schema=passed_feaures
         )
         df_scaled_features = df_scaled_features.fill_nan(0)
 

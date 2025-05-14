@@ -10,12 +10,22 @@ default_options = {
             'top_ranking': 'top_ranking',
 
             # The main score to use for FDR calculation and therefore training data selection.
-            'score': 'feature_match_score',
+            'score': 'match_score',
+
+            # The AA sequence of the first peptide with modifications.
+            'sequence_p1': 'sequence_p1',
+
+            # The AA sequence of the second peptide with modifications.
+            'sequence_p2': 'sequence_p2',
 
             # The AA sequence of the first peptide without any modifications.
+            # If not found, created by removing anything not A-Z and anything
+            # in brackets from sequence_p1.
             'base_sequence_p1': 'base_sequence_p1',
 
             # The AA sequence of the second peptide without any modifications.
+            # If not found, created by removing anything not A-Z and anything
+            # in brackets from sequence_p2.
             'base_sequence_p2': 'base_sequence_p2',
 
             # Semicolon separated list of proteins associated with first peptide.
@@ -44,6 +54,15 @@ default_options = {
             # Decoy class information. Indicates if the CSM is a target-target ("TT"),
             # target-decoy ("TD") or decoy-decoy ("DD")
             'decoy_class': 'decoy_class',
+
+            # Precursor charge (used for unique training sample filter)
+            'charge': 'charge',
+
+            # Link position in peptide 1 (used for unique training sample filter)
+            'link_pos_p1': 'link_pos_p1',
+
+            # Link position in peptide 2 (used for unique training sample filter)
+            'link_pos_p2': 'link_pos_p2',
 
             # Feature columns prefix. All columns starting with this prefix
             # will be considered feature columns.
@@ -76,6 +95,9 @@ default_options = {
         },
     },
     'rescoring': {
+        # PCA number of components to keep.
+        'pca_n_components': None,
+
         # FDR threshold for training samples.
         'train_fdr_threshold': 0.01,
 
@@ -87,6 +109,9 @@ default_options = {
 
         # Maximum number of training samples
         'train_size_max': 20_000,
+
+        # Whether to train on unique CSMs
+        'train_unique_csms': True,
 
         # Number of spectra that will be loaded and rescored at once.
         'spectra_batch_size': 100_000,

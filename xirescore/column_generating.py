@@ -6,6 +6,25 @@ def generate(df: pl.DataFrame, options: dict, do_self_between=False, do_fdr=Fals
     consts = options['input']['constants']
     cols_spectra = input_cols['spectrum_id']
     col_score = input_cols['score']
+    # Generate base sequences
+    if input_cols['base_sequence_p1'] not in df.columns:
+        # Remove modifications
+        df = df.with_columns(
+            pl.col(input_cols['sequence_p1'])\
+                .str.replace_all('\\(.*\\)', '')\
+                .str.replace_all('\\[.*\\]', '')\
+                .str.replace_all('[^A-Z]', '')\
+                .alias(input_cols['base_sequence_p1'])
+        )
+    if input_cols['base_sequence_p2'] not in df.columns:
+        # Remove modifications
+        df = df.with_columns(
+            pl.col(input_cols['sequence_p2'])\
+                .str.replace_all('\\(.*\\)', '')\
+                .str.replace_all('\\[.*\\]', '')\
+                .str.replace_all('[^A-Z]', '')\
+                .alias(input_cols['base_sequence_p2'])
+        )
     # Generate top_ranking
     if input_cols['top_ranking'] not in df.columns:
         df_max = df.group_by(cols_spectra).agg(

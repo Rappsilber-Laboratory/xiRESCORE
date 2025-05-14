@@ -15,6 +15,9 @@ input:
     protein_p2: BetaMappings
     decoy_class: Class
     score: ClassificationScore
+    link_pos_p1: AlphaPos
+    link_pos_p2: BetaPos
+    charge: Charge
     spectrum_id:
     - FileName
     - ScanNumber
