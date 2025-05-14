@@ -95,7 +95,7 @@ default_options = {
         },
     },
     'rescoring': {
-        # PCA number of components to keep.
+        # PCA number of components to keep. If None, perform no PCA.
         'pca_n_components': None,
 
         # FDR threshold for training samples.
