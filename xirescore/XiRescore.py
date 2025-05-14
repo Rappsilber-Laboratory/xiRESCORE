@@ -297,16 +297,16 @@ class XiRescore:
             col_csm = self._options['input']['columns']['csm_id']
 
         # Scale features
-        df_features = self.scaler.transform(df[self.train_features])
+        df_scaled_features = self.scaler.transform(df[self.train_features])
+        df_scaled_features = df_scaled_features.fill_nan(0)
         passed_feaures = self.train_features
         if self.pca is not None:
-            df_features = self.pca.transform(df_features)
-            passed_feaures = [f'_pca_feature_{i}' for i in range(df_features.shape[1])]
+            df_scaled_features = self.pca.transform(df_scaled_features)
+            passed_feaures = [f'_pca_feature_{i}' for i in range(df_scaled_features.shape[1])]
         df_scaled_features = pl.DataFrame(
-            df_features,
+            df_scaled_features,
             schema=passed_feaures
         )
-        df_scaled_features = df_scaled_features.fill_nan(0)
 
         # Rescore DF
         df_scores = rescoring.rescore(
