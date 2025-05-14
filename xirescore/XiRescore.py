@@ -298,7 +298,7 @@ class XiRescore:
 
         # Scale features
         df_scaled_features = self.scaler.transform(df[self.train_features])
-        df_scaled_features = df_scaled_features.fill_nan(0)
+        df_scaled_features = np.nan_to_num(df_scaled_features)
         passed_feaures = self.train_features
         if self.pca is not None:
             df_scaled_features = self.pca.transform(df_scaled_features)
