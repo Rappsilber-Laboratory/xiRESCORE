@@ -160,6 +160,7 @@ class XiRescore:
             self.pca = PCA(n_components=self._options['rescoring']['pca_n_components'])
             pca_features = self.pca.fit_transform(train_df_transformed[self.train_features])
             passed_feaures = [f'_pca_feature_{i}' for i  in range(pca_features.shape[1])]
+            logger.info(f"PCA returned {len(passed_feaures)} features")
             train_df_transformed[passed_feaures] = pca_features
 
 
