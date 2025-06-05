@@ -2,10 +2,11 @@ import logging
 
 import polars as pl
 import numpy as np
+from sklearn import impute
 
 from xirescore import readers
 from xirescore.column_generating import generate as generate_columns
-from xirescore.feature_scaling import get_scaler
+from xirescore.feature_scaling import get_transformers
 
 
 logger = logging.getLogger(__name__)
@@ -79,7 +80,7 @@ def select(input_data, options):
     df = generate_columns(df, options=options, do_fdr=True, do_self_between=True)
 
     # Get scaler
-    scaler, features = get_scaler(df, options)
+    imputer, scaler, features = get_transformers(df, options)
 
     # Selection mode: self-targets-all-decoys
     logger.info(f'Use selection mode {selection_mode}')
@@ -204,7 +205,7 @@ def select(input_data, options):
     else:
         raise TrainDataError(f"Unknown train data selection mode: {selection_mode}.")
 
-    return train_data_df, scaler, features
+    return train_data_df, imputer, scaler, features
 
 
 class TrainDataError(Exception):

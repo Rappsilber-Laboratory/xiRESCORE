@@ -95,6 +95,12 @@ default_options = {
         },
     },
     'rescoring': {
+        # Imputer from `sklearn.impute` to use
+        'imputer': None,
+
+        # Keyword arguments for the imputer
+        'imputer_kwargs': {},
+
         # PCA number of components to keep. If None, perform no PCA.
         'pca_n_components': None,
 

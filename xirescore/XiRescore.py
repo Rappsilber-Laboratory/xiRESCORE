@@ -19,7 +19,7 @@ from xirescore import writers
 from xirescore._default_options import default_options
 from xirescore.column_generating import generate as generate_columns
 from xirescore.feature_extracting import get_features
-from xirescore.feature_scaling import get_scaler
+from xirescore.feature_scaling import get_transformers
 from xirescore.hyperparameter_optimizing import get_hyperparameters
 
 options_merger = Merger(
@@ -109,6 +109,10 @@ class XiRescore:
         """
         Features extracted from training data.
         """
+        self.imputer: TransformerMixin = None
+        """
+        Imputer for missing values.
+        """
 
     def run(self) -> None:
         """
@@ -132,24 +136,29 @@ class XiRescore:
         logger.info('Start training')
 
         if train_df is None:
-            self.train_df, self.scaler, self.train_features = train_data_selecting.select(
+            self.train_df, self.imputer, self.scaler, self.train_features = train_data_selecting.select(
                 self._input,
                 self._options,
             )
         else:
+            self.train_df = train_df
             self.train_df = generate_columns(
-                train_df,
+                self.train_df,
                 options=self._options,
                 do_fdr=True,
                 do_self_between=True
             )
-            _, self.scaler, self.train_features = get_scaler(train_df, self._options)
+            self.imputer, self.scaler, self.train_features = get_transformers(train_df, self._options)
 
         if splits is not None:
             self.splits = splits
 
         # Scale features
         train_df_transformed = self.train_df.clone()
+        if self.imputer is not None:
+            train_df_transformed[self.train_features] = self.imputer.transform(
+                train_df_transformed[self.train_features]
+            )
         train_df_transformed[self.train_features] = self.scaler.transform(
             train_df_transformed[self.train_features]
         )
@@ -296,8 +305,13 @@ class XiRescore:
         else:
             col_csm = self._options['input']['columns']['csm_id']
 
+        # Impute missing feature values
+        df_features = df[self.train_features]
+        if self.imputer is not None:
+            df_features = self.imputer.transform(df_features)
+
         # Scale features
-        df_scaled_features = self.scaler.transform(df[self.train_features])
+        df_scaled_features = self.scaler.transform(df_features)
         df_scaled_features = np.nan_to_num(df_scaled_features)
         passed_feaures = self.train_features
         if self.pca is not None:
