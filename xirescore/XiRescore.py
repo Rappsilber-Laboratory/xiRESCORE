@@ -439,9 +439,9 @@ class XiRescore:
         """
         Get the feature importances.
         """
-        if self.models == []:
+        if not self.models:
             raise XiRescoreError('Models have not been trained.')
-        if self.train_df == None:
+        if self.train_df is None:
             raise XiRescoreError('No training data defined.')
 
         # Check how to calculate feature importance
