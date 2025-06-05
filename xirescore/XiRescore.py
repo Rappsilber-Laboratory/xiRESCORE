@@ -6,10 +6,12 @@ from collections.abc import Collection
 from math import ceil
 
 import numpy as np
+from networkx.algorithms.bipartite.cluster import modes
 from sklearn.decomposition import PCA
 import polars as pl
 from deepmerge import Merger
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.inspection import permutation_importance
 
 from xirescore import readers
 from xirescore import rescoring
@@ -197,7 +199,17 @@ class XiRescore:
         :returns: Models and k-fold slices
         :rtype: dict
         """
+        cols_csm = self._options['input']['columns']['csm_id']
+        cols_spectra = self._options['input']['columns']['spectrum_id']
+        train_cols = list(set(cols_csm+cols_spectra))
+
         return {
+            'options': self._options,
+            'pca': self.pca,
+            'imputer': self.imputer,
+            'scaler': self.scaler,
+            'training_data': self.train_df.select(train_cols),
+            'train_features': self.train_features,
             'splits': self.splits,
             'models': self.models,
         }
@@ -422,6 +434,63 @@ class XiRescore:
             return self._output
         else:
             raise XiRescoreError('Not available for file output.')
+
+    def get_feature_importance(self) -> np.array:
+        """
+        Get the feature importances.
+        """
+        if self.models == []:
+            raise XiRescoreError('Models have not been trained.')
+        if self.train_df == None:
+            raise XiRescoreError('No training data defined.')
+
+        # Check how to calculate feature importance
+        importances = []
+        for model in self.models:
+            if hasattr(model, 'coef_'):
+                importances.append(self._get_feature_importance_linear(model))
+            elif hasattr(model, 'feature_importances_'):
+                importances.append(self._get_feature_importance_tree(model))
+            else:
+                importances.append(self._get_feature_importance_permutation(model))
+
+        if self.pca is not None:
+            loadings = self.pca.components_.T
+            orig_imporances = []
+            for importances_i in importances:
+                orig_imporances.append(loadings @ importances_i)
+            importances = np.array(orig_imporances)
+
+        return importances
+
+    def _get_feature_importance_linear(self, model) -> np.array:
+        coef = model.coef_
+        if coef.ndim == 1:
+            importance = coef
+        elif coef.ndim == 2:
+            importance = np.mean(np.abs(coef), axis=0)
+        else:
+            raise ValueError(f"Unexpected coef_ shape: {coef.shape}")
+        return importance
+
+    def _get_feature_importance_tree(self, model) -> np.array:
+        return model.feature_importances_
+
+    def _get_feature_importance_permutation(self, model) -> np.array:
+        features = self.train_df.select(self.train_features)
+        if self.pca is not None:
+            features = self.pca.transform(features)
+        features = self.scaler.transform(features)
+        labels = self.train_df[self._options['input']['columns']['is_tt']]
+        result = permutation_importance(
+            model,
+            features,
+            labels,
+            n_repeats=10,
+            random_state=self._options['rescoring']['random_seed'],
+            n_jobs=self._options['rescoring']['max_jobs']
+        )
+        return result.importances_mean
 
 
 def _select_right_score(row, col_rescore):
