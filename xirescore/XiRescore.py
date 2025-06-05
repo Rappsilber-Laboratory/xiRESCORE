@@ -456,10 +456,12 @@ class XiRescore:
 
         if self.pca is not None:
             loadings = self.pca.components_.T
-            orig_imporances = []
+            orig_importances = []
             for importances_i in importances:
-                orig_imporances.append(loadings @ importances_i)
-            importances = np.array(orig_imporances)
+                orig_importances.append(loadings @ importances_i)
+            importances = np.array(orig_importances)
+        else:
+            importances = np.array(importances)
 
         return importances
 
