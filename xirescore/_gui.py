@@ -1,4 +1,5 @@
 import os
+import signal
 import subprocess
 import sys
 import tkinter as tk
@@ -14,7 +15,7 @@ threads = []
 processes = []
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
+logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 
 class GuiLoggingHandler(logging.Handler):
@@ -99,7 +100,8 @@ def _save_file_selector(filepath_var):
 
 
 # Create the GUI
-def create_gui(logger):
+def create_gui():
+    logger = logging.getLogger()
     root = tk.Tk()
     icon = tk.PhotoImage(file=files("xirescore.assets").joinpath("xirescore_logo.png"))
     root.iconphoto(False, icon)
@@ -163,13 +165,18 @@ def create_gui(logger):
     textbox.grid(row=4, column=1, columnspan=2, padx=5, pady=5, sticky="nsew")
 
     textbox_handler = GuiLoggingHandler(textbox)
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter('%(message)s')
     textbox_handler.setFormatter(formatter)
     logger.addHandler(textbox_handler)
 
+    root.protocol("WM_DELETE_WINDOW", lambda: on_close(root))
     root.mainloop()
 
-    for t in threads:
-        t.join()
+
+def on_close(root):
     for p in processes:
-        p.wait()
+        p.kill()
+    for t in threads:
+        print('Join logging threads')
+        t.join()
+    root.quit()
