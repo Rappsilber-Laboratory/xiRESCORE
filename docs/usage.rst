@@ -2,16 +2,16 @@
 Usage
 =====
 
-XiRescore can be used in different ways. First of all, there are different options for data sources and result targets:
+xiRESCORE can be used in different ways. First of all, there are different options for data sources and result targets:
 
 * Parquet files
 * CSV files
 * XiSearch2 databases
 * Pandas DataFrames
 
-Secondly there are different ways of calling xiRescore: Either as a Python module in code or via CLI (see examples).
+Secondly there are different ways of calling xiRESCORE: Either as a Python module in code or via CLI (see examples).
 
-To use xiRescore in Python code use the XiRescore class:
+To use xiRESCORE in Python code use the XiRescore class:
 
 .. autoclass:: xirescore.XiRescore::XiRescore
    :no-index:
@@ -39,7 +39,7 @@ configured in the :ref:`options`.
 DataFrame example
 -----------------
 
-This example shows how to use xiRescore directly in code with a DataFrame as input and no file or DB output:
+This example shows how to use xiRESCORE directly in code with a DataFrame as input and no file or DB output:
 
 .. code-block:: python
 
@@ -75,7 +75,7 @@ This example shows how to use xiRescore directly in code with a DataFrame as inp
 CSV/Parquet example
 -------------------
 
-This example shows how to use xiRescore with a CSV input and Parquet output:
+This example shows how to use xiRESCORE with a CSV input and Parquet output:
 
 .. code-block:: python
 
@@ -110,7 +110,7 @@ This example shows how to use xiRescore with a CSV input and Parquet output:
 CLI example
 -----------
 
-This example shows how to xiRescore from command line:
+This example shows how to xiRESCORE from command line:
 
 .. code-block:: bash
 

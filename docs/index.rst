@@ -1,7 +1,7 @@
-xiRescore Documentation
+xiRESCORE Documentation
 ======================================
 
-XiRescore is a cross-link mass spectrometry rescoring tool developed by Rappsilber Laboratory.
+xiRESCORE is a cross-link mass spectrometry rescoring tool developed by Rappsilber Laboratory.
 
 .. toctree::
    :maxdepth: 2

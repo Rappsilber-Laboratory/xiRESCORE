@@ -54,7 +54,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'xiRescore'
+project = 'xiRESCORE'
 copyright = "2024, Rappsilber Laboratory"
 author = "Falk Boudewijn Schimweg"
 
@@ -143,7 +143,7 @@ latex_elements = {
 # [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'xirescore.tex',
-     'xiRescore Documentation',
+     'xiRESCORE Documentation',
      'Falk Boudewijn Schimweg', 'manual'),
 ]
 
@@ -154,7 +154,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     (master_doc, 'xirescore',
-     'xiRescore Documentation',
+     'xiRESCORE Documentation',
      [author], 1)
 ]
 
@@ -166,7 +166,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'xirescore',
-     'xiRescore Documentation',
+     'xiRESCORE Documentation',
      author,
      'xirescore',
      'One line description of project.',

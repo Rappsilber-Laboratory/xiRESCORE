@@ -8,13 +8,13 @@ Installation
 Stable release
 --------------
 
-To install xiRescore, run this command in your terminal:
+To install xiRESCORE, run this command in your terminal:
 
 .. code-block:: console
 
     $ pip install xirescore
 
-This is the preferred method to install xiRescore, as it will always install the most recent stable release.
+This is the preferred method to install xiRESCORE, as it will always install the most recent stable release.
 
 If you don't have `pip`_ installed, this `Python installation guide`_ can guide
 you through the process.
@@ -26,7 +26,7 @@ you through the process.
 From sources
 ------------
 
-The sources for xiRescore can be downloaded from the `Github repo`_.
+The sources for xiRESCORE can be downloaded from the `Github repo`_.
 
 You can either clone the public repository:
 
