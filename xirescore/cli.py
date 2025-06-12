@@ -39,23 +39,14 @@ def main():
         print(xirescore.__version__)
         os._exit(os.EX_OK)
 
-    if args.input_path is None:
-        print('xirescore: error: the following arguments are required: -i', file=sys.stderr)
-        parser.print_help()
-        os._exit(os.EX_USAGE)
-    if args.output_path is None:
-        print('xirescore: error: the following arguments are required: -o', file=sys.stderr)
-        parser.print_help()
-        os._exit(os.EX_USAGE)
-
-    # Load config
-    if args.config_file is not None:
-        with open(args.config_file, 'r') as file:
-            options = yaml.safe_load(file)
-    elif args.config_string is not None:
-        options = ast.literal_eval(args.config_string)
+    if (args.input_path is None) or (args.output_path is None):
+        create_gui()
     else:
-        options = dict()
+        run_headless(args)
+
+
+def run_headless(args):
+    logger = logging.getLogger('xirescore')
 
     # Configure Loki logger
     if args.loki is None:
