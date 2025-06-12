@@ -9,6 +9,7 @@ import logging_loki
 
 from xirescore.XiRescore import XiRescore
 import xirescore
+from xirescore._gui import create_gui
 
 logger = logging.getLogger(__name__)
 
