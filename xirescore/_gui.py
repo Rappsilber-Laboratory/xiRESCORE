@@ -46,7 +46,7 @@ def log_subprocess_output(pipe, logger, level=logging.INFO):
 
 def run_xirescore(input_path, config_path, output_path, logger):
     global xi_proc
-    # Run xiRescore
+    # Run xiRESCORE
     opt_config = []
     if config_path.get() != '':
         opt_config = ['-c', config_path.get()]
@@ -128,7 +128,7 @@ def create_gui():
     root = tk.Tk()
     icon = tk.PhotoImage(file=files("xirescore.assets").joinpath("xirescore_logo.png"))
     root.iconphoto(False, icon)
-    root.title(f"xiRescore {xirescore.__version__}")
+    root.title(f"xiRESCORE {xirescore.__version__}")
     root.rowconfigure(4, weight=1)
     root.columnconfigure(1, weight=1)
 
@@ -174,7 +174,7 @@ def create_gui():
         select_button2.config(state=tk.DISABLED)
         select_button3.config(state=tk.DISABLED)
         go_button.config(state=tk.DISABLED)
-        # Run xiRescore
+        # Run xiRESCORE
         run_xirescore(filepath_input, filepath_config, filepath_output, logger)
 
     go_button.config(command=on_go_button)

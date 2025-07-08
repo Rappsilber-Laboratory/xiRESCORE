@@ -2,7 +2,7 @@ from importlib.metadata import version
 
 from pkg_resources import DistributionNotFound
 
-"""Top-level package for xiRescore."""
+"""Top-level package for xiRESCORE."""
 
 __author__ = """Falk Boudewijn Schimweg"""
 __email__ = 'f.schimweg@win.tu-berlin.de'
