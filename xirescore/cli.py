@@ -3,7 +3,6 @@ import yaml
 import ast
 import logging
 import os
-import sys
 
 import logging_loki
 
@@ -30,6 +29,7 @@ def main():
                         type=str, required=False)
     parser.add_argument('--loki-job-id', action='store', dest='loki_job_id', help='Loki job ID',
                         default="", type=str, required=False)
+    parser.add_argument('--debug', action='store_true', dest='debug', help='Debug logging')
     parser.add_argument('--version', action='store_true', dest='print_version', help='print version')
 
     # Parse arguments
@@ -49,10 +49,7 @@ def run_headless(args):
     logger = logging.getLogger('xirescore')
 
     # Configure Loki logger
-    if args.loki is None:
-        logging.basicConfig()
-        logger.setLevel(logging.DEBUG)
-    else:
+    if args.loki is not None:
         handler = logging_loki.LokiHandler(
             url=args.loki,
             tags={
@@ -61,8 +58,22 @@ def run_headless(args):
             },
             version="1",
         )
-        logger.setLevel(logging.DEBUG)
         logger.addHandler(handler)
+
+    # Set logging level
+    if args.debug:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
+
+    # Load config
+    if args.config_file is not None:
+        with open(args.config_file, 'r') as file:
+            options = yaml.safe_load(file)
+    elif args.config_string is not None:
+        options = ast.literal_eval(args.config_string)
+    else:
+        options = dict()
 
     # Configure stdout logger
     ch = logging.StreamHandler()
