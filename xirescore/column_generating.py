@@ -37,6 +37,17 @@ def generate(df: pl.DataFrame, options: dict, do_self_between=False, do_fdr=Fals
         df = df.with_columns(
             top_ranking=pl.col(col_score) == pl.col(f'{col_score}_max')
         )
+    # Cast decoy columns to bool
+    if input_cols['decoy_p1'] in df.columns and input_cols['decoy_p2'] in df.columns:
+        df = df.with_columns(
+            pl.col(input_cols['decoy_p1']).cast(pl.Boolean),
+            pl.col(input_cols['decoy_p2']).cast(pl.Boolean),
+        )
+    # Cast top_ranking columns to bool
+    if input_cols['top_ranking'] in df.columns:
+        df = df.with_columns(
+            pl.col(input_cols['top_ranking']).cast(pl.Boolean),
+        )
     # Generate decoy_p1/2
     ordered_decoy_class = (consts['td_class'] is not None) and (consts['dt_class'] is not None)
     if input_cols['decoy_class'] in df.columns and ordered_decoy_class:
