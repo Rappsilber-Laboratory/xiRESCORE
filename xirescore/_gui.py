@@ -52,11 +52,11 @@ def run_xirescore(input_path, config_path, output_path, logger):
         opt_config = ['-c', config_path.get()]
     command = [sys.executable]
     if not running_as_pyinstaller():
-        command += [
-            "-m", "xirescore",
-            "-i", f"{input_path.get()}",
-            "-o", f"{output_path.get()}"
-        ]
+        command += ["-m", "xirescore"]
+    command += [
+        "-i", f"{input_path.get()}",
+        "-o", f"{output_path.get()}"
+    ]
     xi_proc = subprocess.Popen(
         command+opt_config,
         stdout=subprocess.PIPE,
