@@ -50,13 +50,15 @@ def run_xirescore(input_path, config_path, output_path, logger):
     opt_config = []
     if config_path.get() != '':
         opt_config = ['-c', config_path.get()]
-    xi_proc = subprocess.Popen(
-        [
-            sys.executable,
+    command = [sys.executable]
+    if not running_as_pyinstaller():
+        command += [
             "-m", "xirescore",
             "-i", f"{input_path.get()}",
-            "-o", f"{output_path.get()}",
-        ]+opt_config,
+            "-o", f"{output_path.get()}"
+        ]
+    xi_proc = subprocess.Popen(
+        command+opt_config,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         bufsize=1,
@@ -199,3 +201,6 @@ def create_gui():
 
 def on_close():
     os._exit(os.EX_OK)
+
+def running_as_pyinstaller():
+    return getattr(sys, 'frozen', False)
