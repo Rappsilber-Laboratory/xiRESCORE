@@ -1,5 +1,4 @@
 import os
-import signal
 import subprocess
 import sys
 import tkinter as tk
