@@ -14,6 +14,7 @@ import xirescore
 
 threads = []
 xi_proc: Union[subprocess.Popen, None] = None
+root = None
 
 class GuiLoggingHandler(logging.Handler):
     """
@@ -125,6 +126,7 @@ def check_finished(root):
 
 # Create the GUI
 def create_gui():
+    global root
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     logger = logging.getLogger()
     root = tk.Tk()
@@ -200,6 +202,8 @@ def create_gui():
 
 
 def on_close():
+    global root
+    root.destroy()
     os._exit(os.EX_OK)
 
 def running_as_pyinstaller():
