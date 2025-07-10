@@ -4,9 +4,9 @@ Development
 Build for Windows
 -----------------
 
-.. code-block:: python
+.. code-block:: bash
 
-    pyinstaller --onefile --windowed --add-data "xirescore/assets;xirescore/assets" --hidden-import pyarrow.vendored.version --name=xiRESCORE xirescore/__main__.py
+    $ pyinstaller --onefile --windowed --add-data "xirescore/assets;xirescore/assets" --hidden-import pyarrow.vendored.version --icon=xirescore/assets/xirescore_logo.ico --name=xiRESCORE xirescore/__main__.py
 
 .. hint::
 
