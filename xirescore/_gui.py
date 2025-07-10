@@ -14,7 +14,7 @@ import xirescore
 
 threads = []
 xi_proc: Union[subprocess.Popen, None] = None
-root = None
+root: tk.Tk
 
 class GuiLoggingHandler(logging.Handler):
     """
@@ -204,7 +204,7 @@ def create_gui():
 def on_close():
     global root
     root.destroy()
-    os._exit(os.EX_OK)
+    sys.exit(0)
 
 def running_as_pyinstaller():
     return getattr(sys, 'frozen', False)
