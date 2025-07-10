@@ -33,9 +33,10 @@ requirements = [
     "psycopg2>=2.9",
     "python-logging-loki",
     "fastparquet>=2022.11.0",
-    "pyarrow",
+    "pyarrow<16; sys_platform == 'win32'",
+    "pyarrow; sys_platform != 'win32'",
     "scipy>=1.0.1",
-    "setuptools~=71.1.0",
+    "setuptools",
     "xiutilities~=1.2.3",
     "polars",
     "xifdr"
@@ -100,6 +101,9 @@ setup(
         'test': requirements_test,
         'docs': requirements_docs,
         'dev': requirements_dev + requirements_test + requirements_docs,
+    },
+    package_data={
+        "xirescore": ["assets/*"],  # Specify the relative path to the logo
     },
     license="GNU Affero General Public License v3 or later (AGPLv3+)",
     long_description=readme + '\n\n' + history,

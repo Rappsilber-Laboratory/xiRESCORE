@@ -179,7 +179,7 @@ def read_sample(input_data,
     if type(input_data) is pl.DataFrame:
         scan_filter = pl.lit(True)
         if only_top_ranking and top_ranking_col in input_data.collect_schema().names():
-            scan_filter &= pl.col(top_ranking_col)
+            scan_filter &= pl.col(top_ranking_col).cast(pl.Boolean)
         if only_pairs:
             scan_filter &= pl.col(sequence_p2_col).is_not_null()
             scan_filter &= pl.col(sequence_p2_col) != ''
@@ -233,7 +233,7 @@ def read_sample_parquet(path: str,
 
     scan_filter = pl.lit(True)
     if only_top_ranking and top_ranking_col in df_scan.columns:
-        scan_filter &= pl.col(top_ranking_col)
+        scan_filter &= pl.col(top_ranking_col).cast(pl.Boolean)
     if only_pairs:
         scan_filter &= pl.col(sequence_p2_col).is_not_null()
         scan_filter &= pl.col(sequence_p2_col) != ''
@@ -264,7 +264,7 @@ def read_sample_csv(path,
 
     scan_filter = pl.lit(True)
     if only_top_ranking and top_ranking_col in df_scan.collect_schema().names():
-        scan_filter &= pl.col(top_ranking_col)
+        scan_filter &= pl.col(top_ranking_col).cast(pl.Boolean)
     if only_pairs:
         scan_filter &= pl.col(sequence_p2_col).is_not_null()
         scan_filter &= pl.col(sequence_p2_col) != ''
