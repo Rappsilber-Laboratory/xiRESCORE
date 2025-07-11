@@ -1,8 +1,9 @@
 import argparse
+import sys
+
 import yaml
 import ast
 import logging
-import os
 
 import logging_loki
 
@@ -37,7 +38,7 @@ def main():
 
     if args.print_version:
         print(xirescore.__version__)
-        os._exit(os.EX_OK)
+        sys.exit(0)
 
     if (args.input_path is None) or (args.output_path is None):
         create_gui()
