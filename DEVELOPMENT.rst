@@ -6,7 +6,7 @@ Build for Windows
 
 .. code-block:: bash
 
-    $ pyinstaller --onefile --windowed --add-data "xirescore/assets;xirescore/assets" --hidden-import pyarrow.vendored.version --icon=xirescore/assets/xirescore_logo.ico --name=xiRESCORE xirescore/__main__.py
+    $ pyinstaller xiRESCORE.spec
 
 .. hint::
 
