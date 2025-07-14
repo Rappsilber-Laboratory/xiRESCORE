@@ -57,6 +57,7 @@ def run_xirescore(input_path, config_path, output_path, logger):
         "-i", f"{input_path.get()}",
         "-o", f"{output_path.get()}"
     ]
+    logger.info(f'Running command {command+opt_config}')
     xi_proc = subprocess.Popen(
         command+opt_config,
         stdout=subprocess.PIPE,
