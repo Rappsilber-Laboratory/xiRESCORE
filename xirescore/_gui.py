@@ -46,6 +46,13 @@ def log_subprocess_output(pipe, logger, level=logging.INFO):
 
 def run_xirescore(input_path, config_path, output_path, logger):
     global xi_proc
+    # Setup logging file
+    file_handler = logging.FileHandler(f"{output_path}.log")
+    file_handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
     # Run xiRESCORE
     opt_config = []
     if config_path.get() != '':
