@@ -187,7 +187,7 @@ def create_gui():
     # Textbox for displaying logs
     label4 = tk.Label(root, text="Log:")
     label4.grid(row=4, column=0, padx=5, pady=5)
-    textbox = scrolledtext.ScrolledText(root, height=15, width=60, wrap="none")
+    textbox = scrolledtext.ScrolledText(root, height=15, width=60, wrap="char")
     textbox.config(state=tk.DISABLED)
     textbox.grid(row=4, column=1, columnspan=2, padx=5, pady=5, sticky="nsew")
 
