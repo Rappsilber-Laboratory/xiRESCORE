@@ -35,7 +35,7 @@ exe = EXE(
     a.scripts,
     a.binaries,
     a.datas,
-    splash
+    #splash,
     [],
     name='xiRESCORE',
     debug=False,
