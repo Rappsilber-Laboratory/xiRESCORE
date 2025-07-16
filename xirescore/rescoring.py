@@ -22,7 +22,7 @@ def rescore(models,
     n_procs = max_cpu
     if n_procs < 1:
         n_procs = int(mp.cpu_count() - 1)
-    # Check how many processes fir in memory
+    # Check how many processes fit in memory
     max_mem_cpu = int(psutil.virtual_memory().available // df.estimated_size())
     max_mem_cpu = max(max_mem_cpu, 1)
     n_procs = min(max_mem_cpu, n_procs)

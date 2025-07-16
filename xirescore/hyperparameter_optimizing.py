@@ -69,7 +69,7 @@ def get_hyperparameters(train_df: pl.DataFrame, cols_features, splits, options):
     max_jobs = options['rescoring']['max_jobs']
     if max_jobs < 1:
         max_jobs = mp.cpu_count()-1
-    # Check how many processes fir in memory
+    # Check how many processes fit in memory
     max_mem_cpu = int(psutil.virtual_memory().available // train_df.estimated_size())
     max_mem_cpu = max(max_mem_cpu, 1)
     max_jobs = min(max_mem_cpu, max_jobs)
