@@ -3,6 +3,7 @@ import importlib
 import logging
 
 import polars as pl
+import psutil
 from sklearn.base import ClassifierMixin
 import sklearn
 from sklearn.metrics import accuracy_score, balanced_accuracy_score
@@ -60,6 +61,10 @@ def train(train_df: pl.DataFrame, cols_features, clf_params, options, splits=Non
     max_jobs = options['rescoring']['max_jobs']
     if max_jobs < 1:
         max_jobs = mp.cpu_count() - 1
+    # Check how many processes fir in memory
+    max_mem_cpu = int(psutil.virtual_memory().available // train_df.estimated_size())
+    max_mem_cpu = max(max_mem_cpu, 1)
+    max_jobs = min(max_mem_cpu, max_jobs)
 
     fold_clfs = []
     with mp.get_context("spawn").Pool(processes=max_jobs) as pool:
