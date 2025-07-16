@@ -44,10 +44,7 @@ def main():
     parser.add_argument('--version', action='store_true', dest='print_version', help='print version')
 
     # Parse arguments
-    try:
-        args = parser.parse_args()
-    except:
-        raise AttributeError(f'Invalid CLI attributes: {sys.argv}')
+    args = parser.parse_args()
 
     if args.print_version:
         print(xirescore.__version__)
