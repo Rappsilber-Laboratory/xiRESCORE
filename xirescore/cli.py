@@ -1,5 +1,6 @@
 import argparse
 import sys
+import os
 
 import yaml
 import ast
@@ -14,6 +15,15 @@ from xirescore._gui import create_gui
 logger = logging.getLogger(__name__)
 
 def main():
+    # Fixes regarding multiprocessing and pyinstaller
+    import multiprocessing
+    multiprocessing.freeze_support()
+
+    if sys.stdout is None:
+        sys.stdout = open(os.devnull, "w")
+    if sys.stderr is None:
+        sys.stderr = open(os.devnull, "w")
+
     # Create argument parser
     parser = argparse.ArgumentParser(description='Rescoring crosslinked-peptide identifications.')
 
