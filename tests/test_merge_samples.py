@@ -38,6 +38,18 @@ def test_merge_samples():
         ''.join(random.choices(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K'], k=20))
         for _ in range(n_samples)
     ]
+    df['link_pos_p1'] = [
+        random.choice(range(1, 21))
+        for _ in range(n_samples)
+    ]
+    df['link_pos_p2'] = [
+        random.choice(range(1, 21))
+        for _ in range(n_samples)
+    ]
+    df['charge'] = [
+        random.choice(range(-3, 3))
+        for _ in range(n_samples)
+    ]
     df['fdr_group'] = 'between'
     df.loc[df['self'], 'fdr_group'] = 'self'
     df['csm_id'] = df.index/len(df)
@@ -66,7 +78,10 @@ def test_merge_samples():
             'columns': {
                 'csm_id': ['csm_id']
             }
-        }
+        },
+        'rescoring': {
+            'train_unique_csms': False
+        },
     }
     with tempfile.TemporaryDirectory(prefix='pytest_xirescore_') as tmpdirname:
         # Add linear matches

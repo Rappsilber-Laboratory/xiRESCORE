@@ -13,6 +13,7 @@ from deepmerge import Merger
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.inspection import permutation_importance
 
+import xirescore
 from xirescore import readers
 from xirescore import rescoring
 from xirescore import train_data_selecting
@@ -20,7 +21,6 @@ from xirescore import training
 from xirescore import writers
 from xirescore._default_options import default_options
 from xirescore.column_generating import generate as generate_columns
-from xirescore.feature_extracting import get_features
 from xirescore.feature_scaling import get_transformers
 from xirescore.hyperparameter_optimizing import get_hyperparameters
 
@@ -60,6 +60,7 @@ class XiRescore:
         :type options: dict, optional
         """
         # Apply override default options with user-supplied options
+        logger.info(f"Version {xirescore.__version__}")
         self._options = copy.deepcopy(default_options)
         if 'model_params' in options.get('rescoring', dict()):
             # Discard default model_params if new ones are provided
