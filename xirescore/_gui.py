@@ -202,6 +202,13 @@ def create_gui():
 
 def on_close():
     global root
+    global xi_proc
+    try:
+        if xi_proc and xi_proc.poll() is None:  # still running
+            xi_proc.terminate()
+            xi_proc.wait(timeout=5)
+    except Exception as e:
+        print("Failed to terminate xi_proc:", e)
     root.destroy()
     sys.exit(0)
 
