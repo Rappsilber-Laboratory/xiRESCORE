@@ -317,7 +317,7 @@ def read_value_ranges(path,
     ).select(
         pl.all().max().name.suffix('_max'),
         pl.all().min().name.suffix('_min'),
-    )
+    ).fill_nan(0).fill_null(0)
 
     df = df_scan.collect()
 
