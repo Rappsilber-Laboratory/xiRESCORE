@@ -108,14 +108,14 @@ class InfScaler:
         return self.base_scaler.transform(X)
 
     def inverse_transform(self, X):
-            min_inpute_arr = np.array([
-                [x for x, _ in self.ranges]
-                for _ in X
-            ])
-            max_inpute_arr = np.array([
-                [x for _, x in self.ranges]
-                for _ in X
-            ])
-            X[:] = np.where(X == min_inpute_arr, np.full(X.shape, -np.inf), X)
-            X[:] = np.where(X == max_inpute_arr, np.full(X.shape, np.inf), X)
-            return self.base_scaler.inverse_transform(X)
+        min_inpute_arr = np.array([
+            [x for x, _ in self.ranges]
+            for _ in X
+        ])
+        max_inpute_arr = np.array([
+            [x for _, x in self.ranges]
+            for _ in X
+        ])
+        X[:] = np.where(X == min_inpute_arr, np.full(X.shape, -np.inf), X)
+        X[:] = np.where(X == max_inpute_arr, np.full(X.shape, np.inf), X)
+        return self.base_scaler.inverse_transform(X)
