@@ -105,7 +105,7 @@ def generate(df: pl.DataFrame, options: dict, do_self_between=False, do_fdr=Fals
                 score=pl.col(input_cols['score']),
                 decoy_class=pl.col(input_cols['decoy_class']).replace(
                     [consts['tt_class'], consts['td_class'], consts['dt_class'], consts['dd_class']],
-                    ['TT', 'TD', 'DT', 'DD']
+                    ['TT', 'TD', 'TD', 'DD']
                 ),
                 fdr_group=pl.col(input_cols['self_between']),
             ).with_columns(
