@@ -6,7 +6,7 @@ from sklearn import preprocessing, impute
 import polars as pl
 
 from xirescore.feature_extracting import get_features
-from xirescore.imputing import InfImputer
+from xirescore.imputing import InfImputer, InfScaler
 
 
 def get_transformers(df: pl.DataFrame, ranges: dict[str, (float, float)], options: dict):
@@ -40,7 +40,10 @@ def get_transformers(df: pl.DataFrame, ranges: dict[str, (float, float)], option
             df_features
         )
 
-    scaler = Scaler(**scaler_options)
+    scaler = InfScaler(
+        Scaler(**scaler_options),
+        ranges
+    )
     scaler.fit(df_features)
 
     return imputer, scaler, features
