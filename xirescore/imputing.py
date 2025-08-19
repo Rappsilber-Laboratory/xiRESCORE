@@ -23,6 +23,16 @@ class InfImputer:
         ])
 
     def fit(self, X):
+        min_inpute_arr = np.array([
+            self.neg_inf_impute_values
+            for _ in range(X.shape[0])
+        ])
+        max_inpute_arr = np.array([
+            self.pos_inf_impute_values
+            for _ in range(X.shape[0])
+        ])
+        X = np.where(X==-np.inf, min_inpute_arr, X)
+        X = np.where(X==np.inf,  max_inpute_arr, X)
         self.base_imputer.fit(X)
 
     def transform(self, X):
