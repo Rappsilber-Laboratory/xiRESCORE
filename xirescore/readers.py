@@ -311,7 +311,7 @@ def read_value_ranges(path,
         columns = df_scan.select(pl.all().first()).collect().columns
 
 
-    df_scan = df_scan.filter(
+    df_scan = df_scan.select(
         pl.all().cast(pl.Float64).replace(
             [-np.inf, np.inf], [None, None]
         )
