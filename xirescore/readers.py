@@ -312,12 +312,13 @@ def read_value_ranges(path,
 
 
     df_scan = df_scan.filter(
-        pl.all() < np.inf,
-        pl.all() > -np.inf,
+        pl.all().cast(pl.Float64).replace(
+            [-np.inf, np.inf], [None, None]
+        )
     ).select(
         pl.all().max().name.suffix('_max'),
         pl.all().min().name.suffix('_min'),
-    ).fill_nan(0).fill_null(0)
+    ).fill_null(0)
 
     df = df_scan.collect()
 
