@@ -6,6 +6,7 @@ from math import ceil
 from typing import Union
 from collections.abc import Sequence
 
+import numpy as np
 import pandas as pd
 import polars as pl
 from fastparquet import ParquetFile as FPParquetFile
@@ -310,7 +311,10 @@ def read_value_ranges(path,
         columns = df_scan.select(pl.all().first()).collect().columns
 
 
-    df_scan = df_scan.select(
+    df_scan = df_scan.filter(
+        pl.all() < np.inf,
+        pl.all() > -np.inf,
+    ).select(
         pl.all().max().name.suffix('_max'),
         pl.all().min().name.suffix('_min'),
     )
