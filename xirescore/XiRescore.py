@@ -6,7 +6,6 @@ from collections.abc import Collection
 from math import ceil
 
 import numpy as np
-from networkx.algorithms.bipartite.cluster import modes
 from sklearn.decomposition import PCA
 import polars as pl
 from deepmerge import Merger
@@ -100,11 +99,11 @@ class XiRescore:
         """
         Trained models from the f-fold cross-validation.
         """
-        self.scaler: TransformerMixin = None
+        self.scaler: TransformerMixin|None = None
         """
         PCA for feature decorrelation
         """
-        self.pca: PCA = None
+        self.pca: PCA|None = None
         """
         Scaler for feature normalization.
         """
@@ -112,9 +111,13 @@ class XiRescore:
         """
         Features extracted from training data.
         """
-        self.imputer: TransformerMixin = None
+        self.imputer: TransformerMixin|None = None
         """
         Imputer for missing values.
+        """
+        self.rational_ranges: dict[str, (float, float)]|None = None
+        """
+        Rational min/max values for infinite value imputation.
         """
 
     def run(self) -> None:
@@ -138,6 +141,8 @@ class XiRescore:
         """
         logger.info('Start training')
 
+        if self.rational_ranges is None:
+            self.rational_ranges = readers.read_value_ranges(self._input)
         if train_df is None:
             self.train_df, self.imputer, self.scaler, self.train_features = train_data_selecting.select(
                 self._input,
@@ -151,7 +156,11 @@ class XiRescore:
                 do_fdr=True,
                 do_self_between=True
             )
-            self.imputer, self.scaler, self.train_features = get_transformers(train_df, self._options)
+            self.imputer, self.scaler, self.train_features = get_transformers(
+                train_df,
+                self.rational_ranges,
+                self._options
+            )
 
         if splits is not None:
             self.splits = splits
@@ -236,6 +245,8 @@ class XiRescore:
             self._input,
             cols_spectra,
         )
+        if self.rational_ranges is None:
+            self.rational_ranges = readers.read_value_ranges(self._input)
 
         # Sort spectra
         spectra.sort()

@@ -78,9 +78,10 @@ def select(input_data, options):
 
     # Generate needed columns
     df = generate_columns(df, options=options, do_fdr=True, do_self_between=True)
+    ranges = readers.read_value_ranges(input_data)
 
     # Get scaler
-    imputer, scaler, features = get_transformers(df, options)
+    imputer, scaler, features = get_transformers(df, ranges, options)
 
     # Selection mode: self-targets-all-decoys
     logger.info(f'Use selection mode {selection_mode}')
