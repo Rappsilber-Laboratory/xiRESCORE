@@ -13,6 +13,7 @@ import os
 import numpy as np
 import yaml
 from xirescore.XiRescore import XiRescore
+from xirescore.readers import read_value_ranges
 
 
 @pytest.mark.df
@@ -86,3 +87,52 @@ def test_imputing():
     assert rescorer.imputer is not None
     assert 'better_score' in rescorer.train_features
     assert rescorer.get_rescored_output() is not None
+
+@pytest.mark.df
+def test_inf_ranges():
+    ranges = read_value_ranges(
+        './tests/fixtures/test_data.parquet',
+        columns=[
+            'match_score',
+            'better_score',
+            'worse_score',
+            'useless_score_uni',
+            'useless_score_norm',
+            'conditional_score',
+        ]
+    )
+    for feat, (min_val, max_val) in ranges.items():
+        assert isinstance(feat, str)
+        assert isinstance(np.float64(min_val), np.float64)
+        assert isinstance(np.float64(max_val), np.float64)
+
+@pytest.mark.df
+def test_imputing_inf_df():
+    df = pl.read_parquet('./tests/fixtures/test_data.parquet')
+    features = [
+            'match_score',
+            'better_score',
+            'worse_score',
+            'useless_score_uni',
+            'useless_score_norm',
+            'conditional_score',
+        ]
+    df = df.with_columns(
+        useless_score_uni=pl.when(pl.arange(pl.len())==0).then(
+            pl.lit(np.inf)
+        ).otherwise(
+            pl.col('useless_score_uni')
+        )
+    )
+    ranges = read_value_ranges(
+        df
+    )
+    assert all([
+        f in ranges.keys()
+        for f in features
+    ])
+    assert ranges['useless_score_uni'][1] == np.inf
+    for feat, (min_val, max_val) in ranges.items():
+        assert isinstance(feat, str)
+        assert isinstance(np.float64(min_val), np.float64)
+        assert isinstance(np.float64(max_val), np.float64)

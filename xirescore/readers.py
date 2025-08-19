@@ -6,6 +6,7 @@ from math import ceil
 from typing import Union
 from collections.abc import Sequence
 
+import numpy as np
 import pandas as pd
 import polars as pl
 from fastparquet import ParquetFile as FPParquetFile
@@ -274,3 +275,54 @@ def read_sample_csv(path,
     every_nth = ceil(n_total / sample)
 
     return df_scan.gather_every(every_nth).collect()
+
+def read_value_ranges(path,
+                      columns=[],
+                      schema_overrides={}) -> dict[str, tuple[float, float]]:
+    if not isinstance(path, str):
+        df_scan = pl.LazyFrame(path)
+    else:
+        file_type = get_source_type(path)
+        if file_type == 'csv':
+            df_scan = pl.scan_csv(
+                path,
+                separator=',',
+                ignore_errors=True,
+                null_values=['∞', '-∞'],
+                schema_overrides=schema_overrides
+            )
+        elif file_type == 'tsv':
+            df_scan = pl.scan_csv(
+                path,
+                separator='\t',
+                ignore_errors=True,
+                null_values=['∞', '-∞'],
+                schema_overrides=schema_overrides
+            )
+        elif file_type == 'parquet':
+            df_scan = pl.scan_parquet(path)
+        else:
+            raise ValueError(f"Unkown file type: {file_type}")
+
+    if len(columns) > 0:
+        df_scan = df_scan.select(columns)
+    else:
+        df_scan = df_scan.select(pl.selectors.numeric())
+        columns = df_scan.select(pl.all().first()).collect().columns
+
+
+    df_scan = df_scan.select(
+        pl.all().cast(pl.Float64).replace(
+            [-np.inf, np.inf], [None, None]
+        )
+    ).select(
+        pl.all().max().name.suffix('_max'),
+        pl.all().min().name.suffix('_min'),
+    ).fill_null(0)
+
+    df = df_scan.collect()
+
+    return {
+        c: (df[f"{c}_min"][0], df[f"{c}_max"][0])
+        for c in columns
+    }
