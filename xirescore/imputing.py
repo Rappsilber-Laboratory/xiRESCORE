@@ -23,6 +23,7 @@ class InfImputer:
         ])
 
     def fit(self, X):
+        X = np.array(X)
         min_inpute_arr = np.array([
             self.neg_inf_impute_values
             for _ in range(X.shape[0])
@@ -33,9 +34,13 @@ class InfImputer:
         ])
         X = np.where(X==-np.inf, min_inpute_arr, X)
         X = np.where(X==np.inf,  max_inpute_arr, X)
+        # Fill in empty columns
+        empty_feats = np.isnan(np.max(X, axis=1))
+        X[:][empty_feats] = 0
         self.base_imputer.fit(X)
 
     def transform(self, X):
+        X = np.array(X)
         min_inpute_arr = np.array([
             self.neg_inf_impute_values
             for _ in range(X.shape[0])
@@ -46,6 +51,9 @@ class InfImputer:
         ])
         X = np.where(X==-np.inf, min_inpute_arr, X)
         X = np.where(X==np.inf,  max_inpute_arr, X)
+        # Fill in empty columns
+        empty_feats = np.isnan(np.max(X, axis=1))
+        X[:][empty_feats] = 0
         return self.base_imputer.transform(X)
 
     def inverse_transform(self, X):
