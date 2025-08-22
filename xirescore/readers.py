@@ -307,7 +307,7 @@ def read_value_ranges(path,
     if len(columns) > 0:
         df_scan = df_scan.select(columns)
     else:
-        df_scan = df_scan.select(pl.selectors.numeric())
+        df_scan = df_scan.select(pl.selectors.numeric(), pl.col(bool))
         columns = df_scan.select(pl.all().first()).collect().columns
 
 
