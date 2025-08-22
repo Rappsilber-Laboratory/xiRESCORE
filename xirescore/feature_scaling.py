@@ -1,6 +1,3 @@
-from logging import Logger
-
-from numpy.ma.core import max_val
 from sklearn.base import ClassifierMixin
 from sklearn import preprocessing, impute
 import polars as pl
