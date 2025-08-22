@@ -11,6 +11,7 @@ a = Analysis(
         'asyncio.base_events',
         'asyncio.events',
         'typing_extensions',
+		'numpy.ma.core',
 	],
     hookspath=[],
     hooksconfig={},
