@@ -232,6 +232,8 @@ class XiRescore:
         """
         cols_csm = self._options['input']['columns']['csm_id']
         cols_spectra = self._options['input']['columns']['spectrum_id']
+        if cols_csm is None:
+            cols_csm = self.train_df.columns
         train_cols = list(set(cols_csm+cols_spectra))
 
         return {
