@@ -131,7 +131,8 @@ def test_imputing_inf_df():
         f in ranges.keys()
         for f in features
     ])
-    assert ranges['useless_score_uni'][1] == np.inf
+    # Inf values should be ignored
+    assert ranges['useless_score_uni'][1] != np.inf
     for feat, (min_val, max_val) in ranges.items():
         assert isinstance(feat, str)
         assert isinstance(np.float64(min_val), np.float64)

@@ -2,6 +2,7 @@ import numpy as np
 
 default_options = {
     'input': {
+        'schema_overrides': {},
         'columns': {
             # Boolean column indicating if a match has
             # the highest score for the specific spectrum.

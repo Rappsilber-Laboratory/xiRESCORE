@@ -69,6 +69,24 @@ class XiRescore:
             options
         )
 
+        # Convert datatype names to actual datatypes
+        for k, v in self._options['input']['schema_overrides'].items():
+            if v == 'str':
+                v = str
+            elif v == 'float':
+                v = float
+            elif v == 'int':
+                v = int
+            elif v == 'bool':
+                v = bool
+            elif isinstance(v, str):
+                try:
+                    v = getattr(pl, v)
+                except:
+                    raise ValueError(f"Could not parse datatype '{v}'.")
+            self._options['input']['schema_overrides'][k] = v
+
+
         # Set random seed
         seed = self._options['rescoring']['random_seed']
         self._true_random_seed = random.randint(0, 2**32-1)
@@ -142,7 +160,10 @@ class XiRescore:
         logger.info('Start training')
 
         if self.rational_ranges is None:
-            self.rational_ranges = readers.read_value_ranges(self._input)
+            self.rational_ranges = readers.read_value_ranges(
+                self._input,
+                schema_overrides=self._options['input']['schema_overrides']
+            )
         if train_df is None:
             self.train_df, self.imputer, self.scaler, self.train_features = train_data_selecting.select(
                 self._input,
@@ -271,7 +292,8 @@ class XiRescore:
             float_cols.append(
                 self._options['input']['columns']['score']
             )
-            schema_overrides = {
+            schema_overrides = self._options['input']['schema_overrides']
+            schema_overrides |= {
                 c: pl.Float64
                 for c in float_cols
             }

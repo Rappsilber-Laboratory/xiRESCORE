@@ -49,7 +49,8 @@ def select(input_data, options):
     float_cols.append(
         options['input']['columns']['score']
     )
-    schema_overrides = {
+    schema_overrides = options['input']['schema_overrides']
+    schema_overrides |= {
         c: pl.Float64
         for c in float_cols
     }
@@ -78,7 +79,10 @@ def select(input_data, options):
 
     # Generate needed columns
     df = generate_columns(df, options=options, do_fdr=True, do_self_between=True)
-    ranges = readers.read_value_ranges(input_data)
+    ranges = readers.read_value_ranges(
+        input_data,
+        schema_overrides=schema_overrides
+    )
 
     # Get scaler
     imputer, scaler, features = get_transformers(df, ranges, options)
