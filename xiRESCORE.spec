@@ -7,11 +7,11 @@ a = Analysis(
     binaries=[],
     datas=[('xirescore/assets', 'xirescore/assets')],
     hiddenimports=[
-		'pyarrow.vendored.version',
+        'pyarrow.vendored.version',
         'asyncio.base_events',
         'asyncio.events',
         'typing_extensions',
-	],
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
