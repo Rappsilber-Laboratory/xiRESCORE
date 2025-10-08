@@ -44,7 +44,7 @@ def log_subprocess_output(pipe, logger, level=logging.INFO):
     pipe.close()
 
 
-def run_xirescore(input_path, config_path, output_path, logger):
+def run_xirescore(input_path, config_path, model_path, output_path, logger):
     global xi_proc
     # Run xiRESCORE
     opt_config = []
@@ -55,8 +55,13 @@ def run_xirescore(input_path, config_path, output_path, logger):
         command += ["-m", "xirescore"]
     command += [
         "-i", f"{input_path.get()}",
-        "-o", f"{output_path.get()}"
+        "-o", f"{output_path.get()}",
+        "-M", f"{output_path.get()}.model"
     ]
+    if model_path.get():
+        command += [
+            "-m", f"{model_path.get()}"
+        ]
     xi_proc = subprocess.Popen(
         command+opt_config,
         stdout=subprocess.PIPE,
@@ -132,37 +137,46 @@ def create_gui():
     icon = tk.PhotoImage(file=files("xirescore.assets").joinpath("xirescore_logo.png"))
     root.iconphoto(False, icon)
     root.title(f"xiRESCORE {xirescore.__version__}")
-    root.rowconfigure(4, weight=1)
+    root.rowconfigure(5, weight=1)
     root.columnconfigure(1, weight=1)
 
     # Filepath variables
     filepath_input = tk.StringVar()
     filepath_config = tk.StringVar()
+    filepath_model = tk.StringVar()
     filepath_output = tk.StringVar()
 
     # First File Selection
     label1 = tk.Label(root, text="Input:")
-    label1.grid(row=0, column=0, padx=5, pady=5)
+    label1.grid(row=0, column=0, padx=5, pady=5, sticky="e")
     entry1 = tk.Entry(root, textvariable=filepath_input, width=40, state='readonly')
     entry1.grid(row=0, column=1, padx=5, pady=5, sticky="new")
     select_button1 = tk.Button(root, text="Select File", command=lambda: _open_file_selector(filepath_input))
     select_button1.grid(row=0, column=2, padx=5, pady=5)
 
-    # Second File Selection (No functionality yet)
+    # Second File Selection
     label2 = tk.Label(root, text="Config:")
-    label2.grid(row=1, column=0, padx=5, pady=5)
+    label2.grid(row=1, column=0, padx=5, pady=5, sticky="e")
     entry2 = tk.Entry(root, textvariable=filepath_config, width=40, state='readonly')
     entry2.grid(row=1, column=1, padx=5, pady=5, sticky="new")
     select_button2 = tk.Button(root, text="Select File", command=lambda: _open_file_selector(filepath_config))
     select_button2.grid(row=1, column=2, padx=5, pady=5)
 
-    # Third File Selection (Save As functionality)
-    label3 = tk.Label(root, text="Output:")
-    label3.grid(row=2, column=0, padx=5, pady=5)
-    entry3 = tk.Entry(root, textvariable=filepath_output, width=40, state='readonly')
+    # Third File Selection
+    label3 = tk.Label(root, text="Model (optional):")
+    label3.grid(row=2, column=0, padx=5, pady=5, sticky="e")
+    entry3 = tk.Entry(root, textvariable=filepath_model, width=40, state='readonly')
     entry3.grid(row=2, column=1, padx=5, pady=5, sticky="new")
-    select_button3 = tk.Button(root, text="Save As", command=lambda: _save_file_selector(filepath_output))
+    select_button3 = tk.Button(root, text="Select File", command=lambda: _open_file_selector(filepath_model))
     select_button3.grid(row=2, column=2, padx=5, pady=5)
+
+    # Fourth File Selection (Save As functionality)
+    label4 = tk.Label(root, text="Output:")
+    label4.grid(row=3, column=0, padx=5, pady=5, sticky="e")
+    entry4 = tk.Entry(root, textvariable=filepath_output, width=40, state='readonly')
+    entry4.grid(row=3, column=1, padx=5, pady=5, sticky="new")
+    select_button4 = tk.Button(root, text="Save As", command=lambda: _save_file_selector(filepath_output))
+    select_button4.grid(row=3, column=2, padx=5, pady=5)
 
     # Go Button
     go_button = tk.Button(
@@ -178,17 +192,17 @@ def create_gui():
         select_button3.config(state=tk.DISABLED)
         go_button.config(state=tk.DISABLED)
         # Run xiRESCORE
-        run_xirescore(filepath_input, filepath_config, filepath_output, logger)
+        run_xirescore(filepath_input, filepath_config, filepath_model, filepath_output, logger)
 
     go_button.config(command=on_go_button)
-    go_button.grid(row=3, column=2, padx=5, pady=5)
+    go_button.grid(row=4, column=2, padx=5, pady=5)
 
     # Textbox for displaying logs
     label4 = tk.Label(root, text="Log:")
-    label4.grid(row=4, column=0, padx=5, pady=5)
+    label4.grid(row=5, column=0, padx=5, pady=5)
     textbox = scrolledtext.ScrolledText(root, height=15, width=60, wrap="char")
     textbox.config(state=tk.DISABLED)
-    textbox.grid(row=4, column=1, columnspan=2, padx=5, pady=5, sticky="nsew")
+    textbox.grid(row=5, column=1, columnspan=2, padx=5, pady=5, sticky="nsew")
 
     textbox_handler = GuiLoggingHandler(textbox)
     formatter = logging.Formatter('%(message)s')
