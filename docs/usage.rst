@@ -127,3 +127,21 @@ The file ``options.yaml`` contains the options you would usually pass to the ``X
         - feat_col1
         - feat_col2
         # ...
+
+-----------
+Schema overrides example
+-----------
+
+When loading CSV files, xiRESCORE (or rather `polars <https://docs.pola.rs/>`__) tries to guess the datatypes based on
+a sample of the input data. To manually set the datatypes of certain columns use the ``input.schema_overrides`` option:
+
+.. code-block:: yaml
+
+  input:
+    schema_overrides:
+      columnX: String
+      columnY: Int32  # polars datatype name
+      columnZ: int    # python datatype name
+
+Valid options for datatypes are `str`, `int`, `float` and `bool` for Python datatypes
+or any `Polars datatype <https://docs.pola.rs/api/python/stable/reference/datatypes.html>`__.
