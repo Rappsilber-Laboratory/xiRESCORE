@@ -216,9 +216,11 @@ def create_gui():
         entry1.config(state=tk.DISABLED)
         entry2.config(state=tk.DISABLED)
         entry3.config(state=tk.DISABLED)
+        entry4.config(state=tk.DISABLED)
         select_button1.config(state=tk.DISABLED)
         select_button2.config(state=tk.DISABLED)
         select_button3.config(state=tk.DISABLED)
+        select_button4.config(state=tk.DISABLED)
         go_button.config(state=tk.DISABLED)
         # Run xiRESCORE
         run_xirescore(filepath_input, filepath_config, filepath_model, filepath_output, logger)
