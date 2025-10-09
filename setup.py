@@ -103,7 +103,7 @@ setup(
         'dev': requirements_dev + requirements_test + requirements_docs,
     },
     package_data={
-        "xirescore": ["assets/*"],  # Specify the relative path to the logo
+        "xirescore": ["assets/*"],
     },
     license="GNU Affero General Public License v3 or later (AGPLv3+)",
     long_description=readme + '\n\n' + history,

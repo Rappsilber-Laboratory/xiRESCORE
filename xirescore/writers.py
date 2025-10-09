@@ -4,6 +4,7 @@ Writers for data outputs
 from pathlib import Path
 import random
 import os
+from typing import Union
 
 import fastparquet
 import pandas as pd
@@ -23,7 +24,7 @@ def append_rescorings(output, df: pd.DataFrame):
         append_parquet(output, df)
 
 
-def append_parquet(output, df: pd.DataFrame|pl.DataFrame, compression='GZIP'):
+def append_parquet(output, df: Union[pd.DataFrame, pl.DataFrame], compression='GZIP'):
     if type(df) is pl.DataFrame:
         df = df.to_pandas()
     else:
@@ -37,7 +38,7 @@ def append_parquet(output, df: pd.DataFrame|pl.DataFrame, compression='GZIP'):
     )
 
 
-def append_csv(output, df: pd.DataFrame|pl.DataFrame, sep=','):
+def append_csv(output, df: Union[pd.DataFrame, pl.DataFrame], sep=','):
     if type(df) is pl.DataFrame:
         df = df.to_pandas()
     else:
