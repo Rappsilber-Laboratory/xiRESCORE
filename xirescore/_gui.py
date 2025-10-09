@@ -111,22 +111,50 @@ def info_box(root, title, text):
     close_button.pack(pady=5)
 
 
-def check_finished(root):
-    global xi_proc
+import threading
+import subprocess
+
+# globals
+xi_proc = None
+threads = []
+stop_event = threading.Event()
+
+def log_subprocess_output(pipe, logger, stop_event):
+    for line in iter(pipe.readline, ''):
+        if stop_event.is_set():
+            break
+        logger.info(line.rstrip())
+    pipe.close()
+
+def check_finished(root, logger):
+    global xi_proc, threads, stop_event
     if xi_proc is not None:
         exit_code = xi_proc.poll()
         if exit_code is not None:
+            # Stop the logging threads
+            stop_event.set()
+            try:
+                xi_proc.stdout.close()
+            except Exception:
+                pass
+            try:
+                xi_proc.stderr.close()
+            except Exception:
+                pass
+            for t in threads:
+                t.join()
+            # Report exit
             if exit_code == 0:
                 info_box(root, "Info", "Rescoring finished")
             else:
-                info_box(
-                    root,
-                    "ERROR",
-                    f"Rescoring failed with exit code {exit_code}!"
-                )
+                info_box(root, "ERROR", f"Rescoring failed with exit code {exit_code}!")
+            # Clean up
             xi_proc = None
-    root.after(1000, lambda: check_finished(root))
+            threads = []
+            stop_event.clear()  # reset for next subprocess
 
+    # schedule next check
+    root.after(1000, lambda: check_finished(root, logger))
 
 # Create the GUI
 def create_gui():
@@ -216,7 +244,15 @@ def create_gui():
 
 
 def on_close():
-    global root
+    global root, xi_proc, threads
+    try:
+        xi_proc.kill()
+        xi_proc.wait()
+    except:
+        pass
+    for t in threads:
+        t.join()
+    threads.clear()
     root.destroy()
     sys.exit(0)
 
