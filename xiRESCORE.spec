@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-
+import xirescore
 
 a = Analysis(
     ['xirescore\\__main__.py'],
@@ -37,7 +37,7 @@ exe = EXE(
     a.datas,
     #splash,
     [],
-    name='xiRESCORE',
+    name=f'xiRESCORE_{xirescore.__version__}',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
