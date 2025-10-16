@@ -85,8 +85,7 @@ typing_extensions==4.15.0
 tzdata==2025.2
 urllib3==2.5.0
 xgboost==1.7.6
-xifdr @ file:///C:/Users/fschimweg/workspaces/python/xiFDR-py
-xirescore @ file:///C:/Users/fschimweg/workspaces/python/xiRESCORE
+xifdr>=v3.0.0a14
 xiutilities==1.2.5.post2
 yapf==0.31.0
 zipp==3.23.0
