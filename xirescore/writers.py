@@ -16,7 +16,11 @@ from xirescore.df_serializing import serialize_columns
 
 def append_rescorings(output, df: pd.DataFrame, schema_overrides: dict = {}):
     output_type = get_source_type(output)
-    df = df.cast(schema_overrides)
+    df = df.cast({
+        k: v
+        for k, v in schema_overrides.items()
+        if k in df.columns
+    })
     if output_type == 'csv':
         append_csv(output, df)
     if output_type == 'tsv':
