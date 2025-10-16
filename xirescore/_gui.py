@@ -49,6 +49,10 @@ def run_xirescore(input_path, config_path, model_path, output_path, logger):
         command += [
             "-m", f"{model_path.get()}"
         ]
+    else:
+        command += [
+            "-M", f"{output_path.get()}.model"
+        ]
     xi_proc = subprocess.Popen(
         command+opt_config,
         stdout=subprocess.PIPE,
