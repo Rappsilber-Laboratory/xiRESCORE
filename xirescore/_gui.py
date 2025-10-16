@@ -43,7 +43,6 @@ def run_xirescore(input_path, config_path, model_path, output_path, logger):
     command += [
         "-i", f"{input_path.get()}",
         "-o", f"{output_path.get()}",
-        "-M", f"{output_path.get()}.model"
     ]
     if model_path.get():
         command += [
