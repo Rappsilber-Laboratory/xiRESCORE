@@ -31,19 +31,6 @@ class GuiLoggingHandler(logging.Handler):
         self.text_widget.see(tk.END)  # Auto-scroll to the end
 
 
-def log_subprocess_output(pipe, logger, level=logging.INFO):
-    for line in iter(pipe.readline, b''):  # Read line by line
-        if isinstance(line, bytes):
-            line = line.decode('utf-8')
-        if line.endswith(os.linesep):
-            lines = line.split(os.linesep)
-            line = os.linesep.join(lines[:-1])
-        if line == '':
-            continue
-        logger.log(level, f'{line}')  # Log each line
-    pipe.close()
-
-
 def run_xirescore(input_path, config_path, model_path, output_path, logger):
     global xi_proc
     # Run xiRESCORE
@@ -70,8 +57,8 @@ def run_xirescore(input_path, config_path, model_path, output_path, logger):
         universal_newlines=True
     )
 
-    stdout_thread = threading.Thread(target=log_subprocess_output, args=(xi_proc.stdout, logger))
-    stderr_thread = threading.Thread(target=log_subprocess_output, args=(xi_proc.stderr, logger))
+    stdout_thread = threading.Thread(target=log_subprocess_output, args=(xi_proc.stdout, logger, stop_event))
+    stderr_thread = threading.Thread(target=log_subprocess_output, args=(xi_proc.stderr, logger, stop_event))
 
     stdout_thread.start()
     stderr_thread.start()
@@ -121,6 +108,13 @@ stop_event = threading.Event()
 
 def log_subprocess_output(pipe, logger, stop_event):
     for line in iter(pipe.readline, ''):
+        if isinstance(line, bytes):
+            line = line.decode('utf-8')
+        if line.endswith(os.linesep):
+            lines = line.split(os.linesep)
+            line = os.linesep.join(lines[:-1])
+        if line == '':
+            continue
         if stop_event.is_set():
             break
         logger.info(line.rstrip())
@@ -241,7 +235,7 @@ def create_gui():
     logger.addHandler(textbox_handler)
 
     root.protocol("WM_DELETE_WINDOW", on_close)
-    root.after(1000, lambda: check_finished(root))
+    root.after(1000, lambda: check_finished(root, logger))
     root.mainloop()
 
 
