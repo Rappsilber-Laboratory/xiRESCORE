@@ -36,3 +36,9 @@ Documentation = "https://xirescore.readthedocs.io/"
 
 [tool.setuptools_scm]
 version_file = "xirescore/_version.py"
+
+[tool.setuptools.packages.find]
+include = ["xirescore", "xirescore.*"]
+
+[tool.setuptools.package-data]
+"xirescore.assets" = ["*.png"]

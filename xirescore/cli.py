@@ -1,4 +1,5 @@
 import argparse
+import pickle
 import sys
 import os
 
@@ -34,12 +35,12 @@ def main():
                         type=str, required=False)
     parser.add_argument('-c', action='store', dest='config_file', help='config file',
                         type=str, required=False)
-    parser.add_argument('-C', action='store', dest='config_string', help='config test',
+    parser.add_argument('-C', action='store', dest='config_string', help='config string',
                         type=str, required=False)
-    parser.add_argument('--loki', action='store', dest='loki', help='Loki server address',
+    parser.add_argument('-m', action='store', dest='model_input', help='pre-trained input model path',
                         type=str, required=False)
-    parser.add_argument('--loki-job-id', action='store', dest='loki_job_id', help='Loki job ID',
-                        default="", type=str, required=False)
+    parser.add_argument('-M', action='store', dest='model_output', help='model export path',
+                        type=str, required=False)
     parser.add_argument('--debug', action='store_true', dest='debug', help='Debug logging')
     parser.add_argument('--version', action='store_true', dest='print_version', help='print version')
 
@@ -58,18 +59,6 @@ def main():
 
 def run_headless(args):
     logger = logging.getLogger('xirescore')
-
-    # Configure Loki logger
-    if args.loki is not None:
-        handler = logging_loki.LokiHandler(
-            url=args.loki,
-            tags={
-                "application": "xirescore",
-                "job_id": args.loki_job_id
-            },
-            version="1",
-        )
-        logger.addHandler(handler)
 
     # Set logging level
     if args.debug:
@@ -101,7 +90,27 @@ def run_headless(args):
         output_path=args.output_path,
         options=options,
     )
-    rescorer.run()
+
+    # Use pre-trained model if defined
+    if isinstance(args.model_input, str):
+        with open(args.model_input, 'rb') as f:
+            model = pickle.load(f)
+        rescorer.pca = model['pca']
+        rescorer.imputer = model['imputer']
+        rescorer.scaler = model['scaler']
+        rescorer.train_df = model['training_data']
+        rescorer.train_features = model['train_features']
+        rescorer.splits = model['splits']
+        rescorer.models = model['models']
+        rescorer.rescore()
+    else:
+        rescorer.run()
+
+    if isinstance(args.model_output, str):
+        logger.info(f"Storing model under {args.model_output}.")
+        with open(args.model_output, 'wb') as f:
+            pickle.dump(rescorer.get_rescoring_state(), f)
+
     logger.info("Done.")
 
 

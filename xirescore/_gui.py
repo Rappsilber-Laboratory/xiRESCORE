@@ -31,20 +31,7 @@ class GuiLoggingHandler(logging.Handler):
         self.text_widget.see(tk.END)  # Auto-scroll to the end
 
 
-def log_subprocess_output(pipe, logger, level=logging.INFO):
-    for line in iter(pipe.readline, b''):  # Read line by line
-        if isinstance(line, bytes):
-            line = line.decode('utf-8')
-        if line.endswith(os.linesep):
-            lines = line.split(os.linesep)
-            line = os.linesep.join(lines[:-1])
-        if line == '':
-            continue
-        logger.log(level, f'{line}')  # Log each line
-    pipe.close()
-
-
-def run_xirescore(input_path, config_path, output_path, logger):
+def run_xirescore(input_path, config_path, model_path, output_path, logger):
     global xi_proc
     # Run xiRESCORE
     opt_config = []
@@ -55,8 +42,16 @@ def run_xirescore(input_path, config_path, output_path, logger):
         command += ["-m", "xirescore"]
     command += [
         "-i", f"{input_path.get()}",
-        "-o", f"{output_path.get()}"
+        "-o", f"{output_path.get()}",
     ]
+    if model_path.get():
+        command += [
+            "-m", f"{model_path.get()}"
+        ]
+    else:
+        command += [
+            "-M", f"{output_path.get()}.model"
+        ]
     xi_proc = subprocess.Popen(
         command+opt_config,
         stdout=subprocess.PIPE,
@@ -65,8 +60,8 @@ def run_xirescore(input_path, config_path, output_path, logger):
         universal_newlines=True
     )
 
-    stdout_thread = threading.Thread(target=log_subprocess_output, args=(xi_proc.stdout, logger))
-    stderr_thread = threading.Thread(target=log_subprocess_output, args=(xi_proc.stderr, logger))
+    stdout_thread = threading.Thread(target=log_subprocess_output, args=(xi_proc.stdout, logger, stop_event))
+    stderr_thread = threading.Thread(target=log_subprocess_output, args=(xi_proc.stderr, logger, stop_event))
 
     stdout_thread.start()
     stderr_thread.start()
@@ -106,22 +101,57 @@ def info_box(root, title, text):
     close_button.pack(pady=5)
 
 
-def check_finished(root):
-    global xi_proc
+import threading
+import subprocess
+
+# globals
+xi_proc = None
+threads = []
+stop_event = threading.Event()
+
+def log_subprocess_output(pipe, logger, stop_event):
+    for line in iter(pipe.readline, ''):
+        if isinstance(line, bytes):
+            line = line.decode('utf-8')
+        if line.endswith(os.linesep):
+            lines = line.split(os.linesep)
+            line = os.linesep.join(lines[:-1])
+        if line == '':
+            continue
+        if stop_event.is_set():
+            break
+        logger.info(line.rstrip())
+    pipe.close()
+
+def check_finished(root, logger):
+    global xi_proc, threads, stop_event
     if xi_proc is not None:
         exit_code = xi_proc.poll()
         if exit_code is not None:
+            # Stop the logging threads
+            stop_event.set()
+            try:
+                xi_proc.stdout.close()
+            except Exception:
+                pass
+            try:
+                xi_proc.stderr.close()
+            except Exception:
+                pass
+            for t in threads:
+                t.join()
+            # Report exit
             if exit_code == 0:
                 info_box(root, "Info", "Rescoring finished")
             else:
-                info_box(
-                    root,
-                    "ERROR",
-                    f"Rescoring failed with exit code {exit_code}!"
-                )
+                info_box(root, "ERROR", f"Rescoring failed with exit code {exit_code}!")
+            # Clean up
             xi_proc = None
-    root.after(1000, lambda: check_finished(root))
+            threads = []
+            stop_event.clear()  # reset for next subprocess
 
+    # schedule next check
+    root.after(1000, lambda: check_finished(root, logger))
 
 # Create the GUI
 def create_gui():
@@ -129,40 +159,50 @@ def create_gui():
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     logger = logging.getLogger()
     root = tk.Tk()
-    icon = tk.PhotoImage(file=files("xirescore.assets").joinpath("xirescore_logo.png"))
+    icon_path = files("xirescore.assets").joinpath("xirescore_logo.png")
+    icon = tk.PhotoImage(file=str(icon_path))
     root.iconphoto(False, icon)
     root.title(f"xiRESCORE {xirescore.__version__}")
-    root.rowconfigure(4, weight=1)
+    root.rowconfigure(5, weight=1)
     root.columnconfigure(1, weight=1)
 
     # Filepath variables
     filepath_input = tk.StringVar()
     filepath_config = tk.StringVar()
+    filepath_model = tk.StringVar()
     filepath_output = tk.StringVar()
 
     # First File Selection
     label1 = tk.Label(root, text="Input:")
-    label1.grid(row=0, column=0, padx=5, pady=5)
+    label1.grid(row=0, column=0, padx=5, pady=5, sticky="e")
     entry1 = tk.Entry(root, textvariable=filepath_input, width=40, state='readonly')
     entry1.grid(row=0, column=1, padx=5, pady=5, sticky="new")
     select_button1 = tk.Button(root, text="Select File", command=lambda: _open_file_selector(filepath_input))
     select_button1.grid(row=0, column=2, padx=5, pady=5)
 
-    # Second File Selection (No functionality yet)
+    # Second File Selection
     label2 = tk.Label(root, text="Config:")
-    label2.grid(row=1, column=0, padx=5, pady=5)
+    label2.grid(row=1, column=0, padx=5, pady=5, sticky="e")
     entry2 = tk.Entry(root, textvariable=filepath_config, width=40, state='readonly')
     entry2.grid(row=1, column=1, padx=5, pady=5, sticky="new")
     select_button2 = tk.Button(root, text="Select File", command=lambda: _open_file_selector(filepath_config))
     select_button2.grid(row=1, column=2, padx=5, pady=5)
 
-    # Third File Selection (Save As functionality)
-    label3 = tk.Label(root, text="Output:")
-    label3.grid(row=2, column=0, padx=5, pady=5)
-    entry3 = tk.Entry(root, textvariable=filepath_output, width=40, state='readonly')
+    # Third File Selection
+    label3 = tk.Label(root, text="Model (optional):")
+    label3.grid(row=2, column=0, padx=5, pady=5, sticky="e")
+    entry3 = tk.Entry(root, textvariable=filepath_model, width=40, state='readonly')
     entry3.grid(row=2, column=1, padx=5, pady=5, sticky="new")
-    select_button3 = tk.Button(root, text="Save As", command=lambda: _save_file_selector(filepath_output))
+    select_button3 = tk.Button(root, text="Select File", command=lambda: _open_file_selector(filepath_model))
     select_button3.grid(row=2, column=2, padx=5, pady=5)
+
+    # Fourth File Selection (Save As functionality)
+    label4 = tk.Label(root, text="Output:")
+    label4.grid(row=3, column=0, padx=5, pady=5, sticky="e")
+    entry4 = tk.Entry(root, textvariable=filepath_output, width=40, state='readonly')
+    entry4.grid(row=3, column=1, padx=5, pady=5, sticky="new")
+    select_button4 = tk.Button(root, text="Save As", command=lambda: _save_file_selector(filepath_output))
+    select_button4.grid(row=3, column=2, padx=5, pady=5)
 
     # Go Button
     go_button = tk.Button(
@@ -173,22 +213,24 @@ def create_gui():
         entry1.config(state=tk.DISABLED)
         entry2.config(state=tk.DISABLED)
         entry3.config(state=tk.DISABLED)
+        entry4.config(state=tk.DISABLED)
         select_button1.config(state=tk.DISABLED)
         select_button2.config(state=tk.DISABLED)
         select_button3.config(state=tk.DISABLED)
+        select_button4.config(state=tk.DISABLED)
         go_button.config(state=tk.DISABLED)
         # Run xiRESCORE
-        run_xirescore(filepath_input, filepath_config, filepath_output, logger)
+        run_xirescore(filepath_input, filepath_config, filepath_model, filepath_output, logger)
 
     go_button.config(command=on_go_button)
-    go_button.grid(row=3, column=2, padx=5, pady=5)
+    go_button.grid(row=4, column=2, padx=5, pady=5)
 
     # Textbox for displaying logs
     label4 = tk.Label(root, text="Log:")
-    label4.grid(row=4, column=0, padx=5, pady=5)
+    label4.grid(row=5, column=0, padx=5, pady=5)
     textbox = scrolledtext.ScrolledText(root, height=15, width=60, wrap="char")
     textbox.config(state=tk.DISABLED)
-    textbox.grid(row=4, column=1, columnspan=2, padx=5, pady=5, sticky="nsew")
+    textbox.grid(row=5, column=1, columnspan=2, padx=5, pady=5, sticky="nsew")
 
     textbox_handler = GuiLoggingHandler(textbox)
     formatter = logging.Formatter('%(message)s')
@@ -196,12 +238,20 @@ def create_gui():
     logger.addHandler(textbox_handler)
 
     root.protocol("WM_DELETE_WINDOW", on_close)
-    root.after(1000, lambda: check_finished(root))
+    root.after(1000, lambda: check_finished(root, logger))
     root.mainloop()
 
 
 def on_close():
-    global root
+    global root, xi_proc, threads
+    try:
+        xi_proc.kill()
+        xi_proc.wait()
+    except:
+        pass
+    for t in threads:
+        t.join()
+    threads.clear()
     root.destroy()
     sys.exit(0)
 

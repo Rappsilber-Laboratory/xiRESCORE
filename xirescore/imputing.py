@@ -1,10 +1,12 @@
+from typing import Union
+
 import numpy as np
 from sklearn.impute import SimpleImputer, KNNImputer, MissingIndicator
 
 
 class InfImputer:
     def __init__(self,
-                 base_imputer: SimpleImputer|KNNImputer|MissingIndicator,
+                 base_imputer: Union[SimpleImputer, KNNImputer, MissingIndicator],
                  ranges: list[tuple[float, float]],
                  inf_factor=0.1):
         self.base_imputer = base_imputer
@@ -71,7 +73,7 @@ class InfImputer:
 
 class InfScaler:
     def __init__(self,
-                 base_scaler: SimpleImputer | KNNImputer | MissingIndicator,
+                 base_scaler: Union[SimpleImputer, KNNImputer, MissingIndicator],
                  ranges: list[tuple[float, float]],
                  inf_factor=0.1):
         self.base_scaler = base_scaler

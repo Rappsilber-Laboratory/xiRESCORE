@@ -4,6 +4,7 @@ import logging
 import random
 from collections.abc import Collection
 from math import ceil
+from typing import Union
 
 import numpy as np
 from sklearn.decomposition import PCA
@@ -117,11 +118,11 @@ class XiRescore:
         """
         Trained models from the f-fold cross-validation.
         """
-        self.scaler: TransformerMixin|None = None
+        self.scaler: Union[TransformerMixin, None] = None
         """
         PCA for feature decorrelation
         """
-        self.pca: PCA|None = None
+        self.pca: Union[PCA, None] = None
         """
         Scaler for feature normalization.
         """
@@ -129,11 +130,11 @@ class XiRescore:
         """
         Features extracted from training data.
         """
-        self.imputer: TransformerMixin|None = None
+        self.imputer: Union[TransformerMixin, None] = None
         """
         Imputer for missing values.
         """
-        self.rational_ranges: dict[str, (float, float)]|None = None
+        self.rational_ranges: Union[dict[str, (float, float)], None] = None
         """
         Rational min/max values for infinite value imputation.
         """
@@ -232,6 +233,8 @@ class XiRescore:
         """
         cols_csm = self._options['input']['columns']['csm_id']
         cols_spectra = self._options['input']['columns']['spectrum_id']
+        if cols_csm is None:
+            cols_csm = self.train_df.columns
         train_cols = list(set(cols_csm+cols_spectra))
 
         return {
@@ -324,7 +327,8 @@ class XiRescore:
             else:
                 writers.append_rescorings(
                     self._output,
-                    df_batch
+                    df_batch,
+                    self._options['input']['schema_overrides']
                 )
 
         # Keep rescored matches when no output is defined
