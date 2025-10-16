@@ -327,7 +327,8 @@ class XiRescore:
             else:
                 writers.append_rescorings(
                     self._output,
-                    df_batch
+                    df_batch,
+                    self._options['input']['schema_overrides']
                 )
 
         # Keep rescored matches when no output is defined

@@ -14,8 +14,9 @@ from xirescore.readers import get_source_type
 from xirescore.df_serializing import serialize_columns
 
 
-def append_rescorings(output, df: pd.DataFrame):
+def append_rescorings(output, df: pd.DataFrame, schema_overrides: dict = {}):
     output_type = get_source_type(output)
+    df = df.cast(schema_overrides)
     if output_type == 'csv':
         append_csv(output, df)
     if output_type == 'tsv':
