@@ -2,6 +2,8 @@ import numpy as np
 
 default_options = {
     'input': {
+        # Datatype definitions for columns. Does not need to be complete.
+        # Strings will be interpreted as python types or polars types.
         'schema_overrides': {},
         'columns': {
             # Boolean column indicating if a match has
