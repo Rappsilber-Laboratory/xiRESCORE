@@ -9,9 +9,11 @@ logger = logging.getLogger(__name__)
 def get_features(df: pl.DataFrame, options: dict, filter_nan=True):
     features_const = options['input']['columns']['features']
     feat_prefix = options['input']['columns']['feature_prefix']
-    features_prefixes = [
-        c for c in df.columns if str(c).startswith(feat_prefix)
-    ]
+    features_prefixes = []
+    if features_prefixes is not None and features_prefixes != "":
+        features_prefixes = [
+            c for c in df.columns if str(c).startswith(feat_prefix)
+        ]
     features = list(set(features_const + features_prefixes))
 
     absent_features = [
