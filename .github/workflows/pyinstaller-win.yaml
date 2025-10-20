@@ -1,0 +1,36 @@
+name: Build PyInstaller EXE (Windows)
+
+on:
+  push:  # runs on each commit
+    branches:
+      - '**'  # all branches
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'  # adjust if needed
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-pyinstaller.txt
+          pip install .
+          pip install pyinstaller
+
+      - name: Build EXE with PyInstaller
+        run: |
+          pyinstaller xiRESCORE.spec
+
+      - name: Upload EXE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: xiRESCORE-exe
+          path: dist/
