@@ -13,11 +13,13 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Needed for setuptools-scm to see tags
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.9'  # adjust if needed
+          python-version: '3.9'
 
       - name: Install dependencies
         run: |
