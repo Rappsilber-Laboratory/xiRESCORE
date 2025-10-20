@@ -4,6 +4,7 @@ on:
   push:  # runs on each commit
     branches:
       - '**'  # all branches
+  workflow_dispatch:  # allows manual trigger from the GitHub UI
 
 jobs:
   build:
