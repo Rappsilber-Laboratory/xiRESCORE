@@ -8,6 +8,7 @@ a = Analysis(
     datas=[('xirescore/assets', 'xirescore/assets')],
     hiddenimports=[
 		'numpy._core',
+		'numpy._core.multiarray',
         'pyarrow.vendored.version',
         'asyncio.base_events',
         'asyncio.events',
