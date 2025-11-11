@@ -210,10 +210,6 @@ def create_gui():
     )
 
     def on_go_button():
-        entry1.config(state=tk.DISABLED)
-        entry2.config(state=tk.DISABLED)
-        entry3.config(state=tk.DISABLED)
-        entry4.config(state=tk.DISABLED)
         select_button1.config(state=tk.DISABLED)
         select_button2.config(state=tk.DISABLED)
         select_button3.config(state=tk.DISABLED)
